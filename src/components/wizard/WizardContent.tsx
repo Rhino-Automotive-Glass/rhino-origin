@@ -158,7 +158,7 @@ export function WizardContent() {
                   ${
                     isActive
                       ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-600"
+                      : "bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
                   }
                 `}
               >

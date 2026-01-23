@@ -9,7 +9,7 @@ export function ProgressBar() {
     <div className="w-full py-6 px-4">
       <div className="flex items-center justify-between relative">
         {/* Progress line background */}
-        <div className="absolute left-0 right-0 top-[25px] h-1 bg-gray-200 z-0" />
+        <div className="absolute left-0 right-0 top-[25px] h-1 bg-gray-200 dark:bg-gray-600 z-0" />
 
         {/* Progress line filled */}
         <div
@@ -42,8 +42,8 @@ export function ProgressBar() {
                     isCompleted
                       ? "bg-blue-600 text-white"
                       : isCurrent
-                      ? "bg-blue-600 text-white ring-4 ring-blue-200"
-                      : "bg-white text-gray-500 border-2 border-gray-300"
+                      ? "bg-blue-600 text-white ring-4 ring-blue-200 dark:ring-blue-400/30"
+                      : "bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 border-2 border-gray-300 dark:border-gray-500"
                   }
                 `}
               >
@@ -73,10 +73,10 @@ export function ProgressBar() {
                   hidden sm:block
                   ${
                     isCurrent
-                      ? "text-blue-600"
+                      ? "text-blue-600 dark:text-blue-400"
                       : isCompleted
-                      ? "text-blue-600"
-                      : "text-gray-500"
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-500 dark:text-gray-400"
                   }
                 `}
               >
@@ -90,10 +90,10 @@ export function ProgressBar() {
                   sm:hidden
                   ${
                     isCurrent
-                      ? "text-blue-600"
+                      ? "text-blue-600 dark:text-blue-400"
                       : isCompleted
-                      ? "text-blue-600"
-                      : "text-gray-500"
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-500 dark:text-gray-400"
                   }
                 `}
               >

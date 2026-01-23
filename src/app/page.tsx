@@ -1,18 +1,114 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import {
   WizardProvider,
+  FormDataProvider,
   ProgressBar,
   WizardNavigation,
   WizardContent,
 } from "@/components/wizard";
+import { ThemeToggle } from "@/components/theme";
+
+interface OrderInfo {
+  cliente: string;
+  codigoRhino: string;
+  descripcion: string;
+  claveExterna: string;
+}
+
+const STORAGE_KEY = "rhino-order-info";
+const DEBOUNCE_MS = 1000;
 
 export default function Home() {
+  const [orderInfo, setOrderInfo] = useState<OrderInfo>({
+    cliente: "",
+    codigoRhino: "",
+    descripcion: "",
+    claveExterna: "",
+  });
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load saved data on mount
+  useEffect(() => {
+    setMounted(true);
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setOrderInfo(parsed.orderInfo || {
+          cliente: "",
+          codigoRhino: "",
+          descripcion: "",
+          claveExterna: "",
+        });
+        if (parsed.lastSaved) {
+          setLastSaved(new Date(parsed.lastSaved));
+        }
+      } catch (e) {
+        console.error("Error loading saved order info:", e);
+      }
+    }
+  }, []);
+
+  // Debounced autosave
+  useEffect(() => {
+    if (!mounted) return;
+
+    const hasData = Object.values(orderInfo).some((value) => value.trim() !== "");
+    if (hasData) {
+      setIsSaving(true);
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (hasData) {
+        const now = new Date();
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            orderInfo,
+            lastSaved: now.toISOString(),
+          })
+        );
+        setLastSaved(now);
+        setIsSaving(false);
+      }
+    }, DEBOUNCE_MS);
+
+    return () => {
+      clearTimeout(timeoutId);
+      setIsSaving(false);
+    };
+  }, [orderInfo, mounted]);
+
+  const handleInputChange = useCallback(
+    (field: keyof OrderInfo) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setOrderInfo((prev) => ({
+        ...prev,
+        [field]: e.target.value,
+      }));
+    },
+    []
+  );
+
+  const formatDateTime = (date: Date) => {
+    return date.toLocaleString("es-MX", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
   return (
     <WizardProvider>
-      <div className="min-h-screen bg-gray-50">
+      <FormDataProvider>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
+        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -32,30 +128,31 @@ export default function Home() {
                   </svg>
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                     Rhino Origin
                   </h1>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     Sistema de Órdenes de Vidrio Automotriz
                   </p>
                 </div>
               </div>
+              <ThemeToggle />
             </div>
           </div>
         </header>
 
         {/* Order Info Section */}
-        <div className="bg-white border-b border-gray-200">
+        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">
+            <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                 Información de Orden
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label
                     htmlFor="cliente"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
                     Cliente
                   </label>
@@ -63,14 +160,16 @@ export default function Home() {
                     type="text"
                     id="cliente"
                     name="cliente"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    value={orderInfo.cliente}
+                    onChange={handleInputChange("cliente")}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     placeholder="Nombre del cliente"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="codigoRhino"
-                    className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1"
+                    className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
                     Código Rhino/NAGS
                     <a
@@ -78,7 +177,7 @@ export default function Home() {
                       target="_blank"
                       rel="noopener noreferrer"
                       title="Ver códigos disponibles"
-                      className="text-blue-500 hover:text-blue-700 transition-colors"
+                      className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                     >
                       <svg
                         className="w-4 h-4"
@@ -99,14 +198,16 @@ export default function Home() {
                     type="text"
                     id="codigoRhino"
                     name="codigoRhino"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    value={orderInfo.codigoRhino}
+                    onChange={handleInputChange("codigoRhino")}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     placeholder="Ej: RH-12345"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="descripcion"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
                     Descripción
                   </label>
@@ -114,14 +215,16 @@ export default function Home() {
                     type="text"
                     id="descripcion"
                     name="descripcion"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    value={orderInfo.descripcion}
+                    onChange={handleInputChange("descripcion")}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     placeholder="Descripción de la orden"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="claveExterna"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
                     Clave Externa
                   </label>
@@ -129,9 +232,67 @@ export default function Home() {
                     type="text"
                     id="claveExterna"
                     name="claveExterna"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    value={orderInfo.claveExterna}
+                    onChange={handleInputChange("claveExterna")}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     placeholder="Clave externa"
                   />
+                </div>
+              </div>
+              {/* Autosave Status */}
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                <div className="flex items-center justify-end text-sm text-gray-500 dark:text-gray-400">
+                  {mounted && isSaving ? (
+                    <div className="flex items-center gap-2">
+                      <svg
+                        className="w-4 h-4 text-blue-500 animate-spin"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      <span>Guardando...</span>
+                    </div>
+                  ) : mounted && lastSaved ? (
+                    <div className="flex items-center gap-2">
+                      <svg
+                        className="w-4 h-4 text-green-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      <span>
+                        Guardado automáticamente: {formatDateTime(lastSaved)}
+                      </span>
+                    </div>
+                  ) : mounted ? (
+                    <span className="text-gray-400 dark:text-gray-500">
+                      Los cambios se guardarán automáticamente
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 dark:text-gray-500">
+                      &nbsp;
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -139,7 +300,7 @@ export default function Home() {
         </div>
 
         {/* Progress Bar */}
-        <div className="bg-white border-b border-gray-200">
+        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
           <div className="max-w-[1600px] mx-auto">
             <ProgressBar />
           </div>
@@ -154,14 +315,15 @@ export default function Home() {
         </main>
 
         {/* Footer */}
-        <footer className="bg-white border-t border-gray-200 mt-auto">
+        <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
               Rhino Origin - Sistema de Órdenes de Vidrio Automotriz
             </p>
           </div>
         </footer>
-      </div>
+        </div>
+      </FormDataProvider>
     </WizardProvider>
   );
 }

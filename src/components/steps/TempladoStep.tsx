@@ -8,10 +8,10 @@ export function TempladoStep() {
       title="Templado"
       description="Parámetros del proceso de templado térmico del vidrio."
     >
-      <div className="flex items-center justify-center h-[300px] border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+      <div className="flex items-center justify-center h-[300px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50">
         <div className="text-center">
           <svg
-            className="w-12 h-12 mx-auto text-gray-400"
+            className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -29,10 +29,10 @@ export function TempladoStep() {
               d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"
             />
           </svg>
-          <p className="mt-2 text-gray-500">
+          <p className="mt-2 text-gray-500 dark:text-gray-400">
             Formulario de templado próximamente
           </p>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-gray-400 dark:text-gray-500">
             Temperatura, tiempo de horneado, enfriamiento, etc.
           </p>
         </div>
