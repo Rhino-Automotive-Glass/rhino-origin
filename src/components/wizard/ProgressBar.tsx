@@ -9,11 +9,11 @@ export function ProgressBar() {
     <div className="w-full py-6 px-4">
       <div className="flex items-center justify-between relative">
         {/* Progress line background */}
-        <div className="absolute left-0 right-0 top-1/2 h-1 bg-gray-200 -translate-y-1/2 z-0" />
+        <div className="absolute left-0 right-0 top-[25px] h-1 bg-gray-200 z-0" />
 
         {/* Progress line filled */}
         <div
-          className="absolute left-0 top-1/2 h-1 bg-blue-600 -translate-y-1/2 z-0 transition-all duration-300"
+          className="absolute left-0 top-[25px] h-1 bg-blue-600 z-0 transition-all duration-300"
           style={{
             width: `${(currentStep / (steps.length - 1)) * 100}%`,
           }}
@@ -36,8 +36,8 @@ export function ProgressBar() {
               {/* Circle indicator */}
               <div
                 className={`
-                  w-10 h-10 rounded-full flex items-center justify-center
-                  text-sm font-semibold transition-all duration-300
+                  w-[50px] h-[50px] rounded-full flex items-center justify-center
+                  text-base font-bold transition-all duration-300
                   ${
                     isCompleted
                       ? "bg-blue-600 text-white"
@@ -69,7 +69,7 @@ export function ProgressBar() {
               {/* Label */}
               <span
                 className={`
-                  mt-2 text-xs font-medium whitespace-nowrap
+                  mt-2 text-xs font-bold whitespace-nowrap
                   hidden sm:block
                   ${
                     isCurrent
@@ -86,7 +86,7 @@ export function ProgressBar() {
               {/* Short label for mobile */}
               <span
                 className={`
-                  mt-2 text-xs font-medium whitespace-nowrap
+                  mt-2 text-xs font-bold whitespace-nowrap
                   sm:hidden
                   ${
                     isCurrent
