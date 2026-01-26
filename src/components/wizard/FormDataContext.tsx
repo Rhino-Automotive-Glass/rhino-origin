@@ -26,6 +26,13 @@ interface DisenoData {
   files: UploadedFile[];
 }
 
+// Corte Step Data
+interface CorteData {
+  ejeX: string;
+  ejeY: string;
+  area: string;
+}
+
 // Pulido Step Data
 const TIPO_PULIDO_OPTIONS = ["2 Pits", "4", "Mixto"] as const;
 type TipoPulidoOption = (typeof TIPO_PULIDO_OPTIONS)[number];
@@ -39,6 +46,7 @@ interface PulidoData {
 interface FormData {
   preparacion: PreparacionData;
   diseno: DisenoData;
+  corte: CorteData;
   pulido: PulidoData;
 }
 
@@ -48,6 +56,7 @@ interface FormDataContextType {
   updateDiseno: (data: Partial<DisenoData>) => void;
   addDisenoFile: (file: UploadedFile) => void;
   removeDisenoFile: (id: string) => void;
+  updateCorte: (data: Partial<CorteData>) => void;
   updatePulido: (data: Partial<PulidoData>) => void;
 }
 
@@ -62,6 +71,11 @@ const initialFormData: FormData = {
   diseno: {
     files: [],
   },
+  corte: {
+    ejeX: "",
+    ejeY: "",
+    area: "",
+  },
   pulido: {
     metrosLineales: "",
     tipoPulido: "",
@@ -74,6 +88,7 @@ const FormDataContext = createContext<FormDataContextType>({
   updateDiseno: () => {},
   addDisenoFile: () => {},
   removeDisenoFile: () => {},
+  updateCorte: () => {},
   updatePulido: () => {},
 });
 
@@ -136,6 +151,16 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateCorte = (data: Partial<CorteData>) => {
+    setFormData((prev) => ({
+      ...prev,
+      corte: {
+        ...prev.corte,
+        ...data,
+      },
+    }));
+  };
+
   return (
     <FormDataContext.Provider
       value={{
@@ -144,6 +169,7 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         updateDiseno,
         addDisenoFile,
         removeDisenoFile,
+        updateCorte,
         updatePulido,
       }}
     >
