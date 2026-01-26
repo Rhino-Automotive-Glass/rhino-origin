@@ -6,7 +6,7 @@ import { useFormData } from "../wizard";
 const ESPESOR_OPTIONS = ["4", "5", "6", "otro"] as const;
 type EspesorOption = (typeof ESPESOR_OPTIONS)[number];
 
-const ORIGEN_OPTIONS = ["original", "plantilla", "otro"] as const;
+const ORIGEN_OPTIONS = ["original", "plantilla", "unidad", "plano", "otro"] as const;
 type OrigenOption = (typeof ORIGEN_OPTIONS)[number];
 
 export function PreparacionStep() {

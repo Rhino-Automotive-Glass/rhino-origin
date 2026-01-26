@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 
 // Preparacion Step Data
 type EspesorOption = "4" | "5" | "6" | "otro";
-type OrigenOption = "original" | "plantilla" | "otro";
+type OrigenOption = "original" | "plantilla" | "unidad" | "plano" | "otro";
 
 interface PreparacionData {
   espesor: EspesorOption | "";
@@ -26,10 +26,20 @@ interface DisenoData {
   files: UploadedFile[];
 }
 
+// Pulido Step Data
+const TIPO_PULIDO_OPTIONS = ["2 Pits", "4", "Mixto"] as const;
+type TipoPulidoOption = (typeof TIPO_PULIDO_OPTIONS)[number];
+
+interface PulidoData {
+  metrosLineales: string;
+  tipoPulido: TipoPulidoOption | "";
+}
+
 // All Form Data
 interface FormData {
   preparacion: PreparacionData;
   diseno: DisenoData;
+  pulido: PulidoData;
 }
 
 interface FormDataContextType {
@@ -38,6 +48,7 @@ interface FormDataContextType {
   updateDiseno: (data: Partial<DisenoData>) => void;
   addDisenoFile: (file: UploadedFile) => void;
   removeDisenoFile: (id: string) => void;
+  updatePulido: (data: Partial<PulidoData>) => void;
 }
 
 const initialFormData: FormData = {
@@ -51,6 +62,10 @@ const initialFormData: FormData = {
   diseno: {
     files: [],
   },
+  pulido: {
+    metrosLineales: "",
+    tipoPulido: "",
+  },
 };
 
 const FormDataContext = createContext<FormDataContextType>({
@@ -59,6 +74,7 @@ const FormDataContext = createContext<FormDataContextType>({
   updateDiseno: () => {},
   addDisenoFile: () => {},
   removeDisenoFile: () => {},
+  updatePulido: () => {},
 });
 
 export function FormDataProvider({ children }: { children: ReactNode }) {
@@ -110,6 +126,16 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updatePulido = (data: Partial<PulidoData>) => {
+    setFormData((prev) => ({
+      ...prev,
+      pulido: {
+        ...prev.pulido,
+        ...data,
+      },
+    }));
+  };
+
   return (
     <FormDataContext.Provider
       value={{
@@ -118,6 +144,7 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         updateDiseno,
         addDisenoFile,
         removeDisenoFile,
+        updatePulido,
       }}
     >
       {children}
