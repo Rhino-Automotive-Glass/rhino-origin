@@ -49,12 +49,23 @@ interface PulidoData {
   tipoPulido: TipoPulidoOption | "";
 }
 
+// Templado Step Data
+type TipoTempladoOption = "Maquila" | "Fábrica" | "";
+export type TipoAsociadoOption = "Plano" | "Molde" | "";
+
+interface TempladoData {
+  tipoTemplado: TipoTempladoOption;
+  tipoAsociado: TipoAsociadoOption;
+  curvatura: string;
+}
+
 // All Form Data
 interface FormData {
   preparacion: PreparacionData;
   diseno: DisenoData;
   corte: CorteData;
   barrenos: BarrenosData;
+  templado: TempladoData;
   pulido: PulidoData;
 }
 
@@ -66,6 +77,7 @@ interface FormDataContextType {
   removeDisenoFile: (id: string) => void;
   updateCorte: (data: Partial<CorteData>) => void;
   updateBarrenos: (data: Partial<BarrenosData>) => void;
+  updateTemplado: (data: Partial<TempladoData>) => void;
   updatePulido: (data: Partial<PulidoData>) => void;
 }
 
@@ -90,6 +102,11 @@ const initialFormData: FormData = {
     tipoBroca: "",
     diametro: "",
   },
+  templado: {
+    tipoTemplado: "",
+    tipoAsociado: "",
+    curvatura: "",
+  },
   pulido: {
     metrosLineales: "",
     tipoPulido: "",
@@ -103,8 +120,9 @@ const FormDataContext = createContext<FormDataContextType>({
   addDisenoFile: () => {},
   removeDisenoFile: () => {},
   updateCorte: () => {},
-  updatePulido: () => {},
   updateBarrenos: () => {},
+  updateTemplado: () => {},
+  updatePulido: () => {},
 });
 
 export function FormDataProvider({ children }: { children: ReactNode }) {
@@ -186,6 +204,16 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateTemplado = (data: Partial<TempladoData>) => {
+    setFormData((prev) => ({
+      ...prev,
+      templado: {
+        ...prev.templado,
+        ...data,
+      },
+    }));
+  };
+
   return (
     <FormDataContext.Provider
       value={{
@@ -196,6 +224,7 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         removeDisenoFile,
         updateCorte,
         updateBarrenos,
+        updateTemplado,
         updatePulido,
       }}
     >
