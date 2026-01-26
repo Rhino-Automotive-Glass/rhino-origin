@@ -33,6 +33,13 @@ interface CorteData {
   area: string;
 }
 
+// Barrenos Step Data
+interface BarrenosData {
+  cantidadBarrenos: string;
+  tipoBroca: string;
+  diametro: string;
+}
+
 // Pulido Step Data
 const TIPO_PULIDO_OPTIONS = ["2 Pits", "4", "Mixto"] as const;
 type TipoPulidoOption = (typeof TIPO_PULIDO_OPTIONS)[number];
@@ -47,6 +54,7 @@ interface FormData {
   preparacion: PreparacionData;
   diseno: DisenoData;
   corte: CorteData;
+  barrenos: BarrenosData;
   pulido: PulidoData;
 }
 
@@ -57,6 +65,7 @@ interface FormDataContextType {
   addDisenoFile: (file: UploadedFile) => void;
   removeDisenoFile: (id: string) => void;
   updateCorte: (data: Partial<CorteData>) => void;
+  updateBarrenos: (data: Partial<BarrenosData>) => void;
   updatePulido: (data: Partial<PulidoData>) => void;
 }
 
@@ -76,6 +85,11 @@ const initialFormData: FormData = {
     ejeY: "",
     area: "",
   },
+  barrenos: {
+    cantidadBarrenos: "",
+    tipoBroca: "",
+    diametro: "",
+  },
   pulido: {
     metrosLineales: "",
     tipoPulido: "",
@@ -90,6 +104,7 @@ const FormDataContext = createContext<FormDataContextType>({
   removeDisenoFile: () => {},
   updateCorte: () => {},
   updatePulido: () => {},
+  updateBarrenos: () => {},
 });
 
 export function FormDataProvider({ children }: { children: ReactNode }) {
@@ -161,6 +176,16 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateBarrenos = (data: Partial<BarrenosData>) => {
+    setFormData((prev) => ({
+      ...prev,
+      barrenos: {
+        ...prev.barrenos,
+        ...data,
+      },
+    }));
+  };
+
   return (
     <FormDataContext.Provider
       value={{
@@ -170,6 +195,7 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         addDisenoFile,
         removeDisenoFile,
         updateCorte,
+        updateBarrenos,
         updatePulido,
       }}
     >
