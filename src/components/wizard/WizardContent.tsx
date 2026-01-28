@@ -8,7 +8,7 @@ import {
   CorteStep,
   PulidoStep,
   BarrenosStep,
-  LaminadoStep,
+  MarcaStep,
   TempladoStep,
   CalidadStep,
 } from "../steps";
@@ -19,7 +19,7 @@ const stepComponents = [
   CorteStep,
   PulidoStep,
   BarrenosStep,
-  LaminadoStep,
+  MarcaStep,
   TempladoStep,
   CalidadStep,
 ];

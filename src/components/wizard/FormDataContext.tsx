@@ -34,10 +34,15 @@ interface CorteData {
 }
 
 // Barrenos Step Data
-interface BarrenosData {
-  cantidadBarrenos: string;
-  tipoBroca: string;
+interface Barreno {
+  x: string;
+  y: string;
   diametro: string;
+}
+interface BarrenosData {
+  aplica: boolean;
+  cantidadBarrenos: number;
+  barrenos: Barreno[];
 }
 
 // Pulido Step Data
@@ -98,9 +103,9 @@ const initialFormData: FormData = {
     area: "",
   },
   barrenos: {
-    cantidadBarrenos: "",
-    tipoBroca: "",
-    diametro: "",
+    aplica: false,
+    cantidadBarrenos: 0,
+    barrenos: [],
   },
   templado: {
     tipoTemplado: "",
