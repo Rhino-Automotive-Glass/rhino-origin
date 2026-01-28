@@ -9,9 +9,10 @@ import {
   WizardContent,
 } from "@/components/wizard";
 import { ThemeToggle } from "@/components/theme";
+import { ProductCodeSearch } from "@/components/ProductCodeSearch";
+import { createClient } from "@/app/lib/supabase/client";
 
 interface OrderInfo {
-  cliente: string;
   codigoRhino: string;
   descripcion: string;
   claveExterna: string;
@@ -22,7 +23,6 @@ const DEBOUNCE_MS = 1000;
 
 export default function Home() {
   const [orderInfo, setOrderInfo] = useState<OrderInfo>({
-    cliente: "",
     codigoRhino: "",
     descripcion: "",
     claveExterna: "",
@@ -30,8 +30,9 @@ export default function Home() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // Load saved data on mount
+  // Load saved data and user email on mount
   useEffect(() => {
     setMounted(true);
     const savedData = localStorage.getItem(STORAGE_KEY);
@@ -39,7 +40,6 @@ export default function Home() {
       try {
         const parsed = JSON.parse(savedData);
         setOrderInfo(parsed.orderInfo || {
-          cliente: "",
           codigoRhino: "",
           descripcion: "",
           claveExterna: "",
@@ -51,6 +51,14 @@ export default function Home() {
         console.error("Error loading saved order info:", e);
       }
     }
+
+    // Fetch logged-in user email
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) {
+        setUserEmail(user.email);
+      }
+    });
   }, []);
 
   // Debounced autosave
@@ -88,6 +96,17 @@ export default function Home() {
       setOrderInfo((prev) => ({
         ...prev,
         [field]: e.target.value,
+      }));
+    },
+    []
+  );
+
+  const handleProductCodeChange = useCallback(
+    (code: string, description?: string) => {
+      setOrderInfo((prev) => ({
+        ...prev,
+        codigoRhino: code,
+        ...(description !== undefined && { descripcion: description }),
       }));
     },
     []
@@ -148,60 +167,17 @@ export default function Home() {
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                 Información de Orden
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label
-                    htmlFor="cliente"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Cliente
-                  </label>
-                  <input
-                    type="text"
-                    id="cliente"
-                    name="cliente"
-                    value={orderInfo.cliente}
-                    onChange={handleInputChange("cliente")}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    placeholder="Nombre del cliente"
-                  />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label
                     htmlFor="codigoRhino"
-                    className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >
                     Código Rhino/NAGS
-                    <a
-                      href="https://rhino-product-code-description.vercel.app/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Ver códigos disponibles"
-                      className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    </a>
                   </label>
-                  <input
-                    type="text"
-                    id="codigoRhino"
-                    name="codigoRhino"
+                  <ProductCodeSearch
                     value={orderInfo.codigoRhino}
-                    onChange={handleInputChange("codigoRhino")}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    placeholder="Ej: RH-12345"
+                    onChange={handleProductCodeChange}
                   />
                 </div>
                 <div>
@@ -282,6 +258,7 @@ export default function Home() {
                       </svg>
                       <span>
                         Guardado automáticamente: {formatDateTime(lastSaved)}
+                        {userEmail && ` por ${userEmail}`}
                       </span>
                     </div>
                   ) : mounted ? (
