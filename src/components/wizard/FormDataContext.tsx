@@ -72,6 +72,14 @@ interface SerigrafiaData {
   defroster_area: string;
 }
 
+// Marca Step Data
+interface MarcaData {
+  marca: string;
+  colorMarca: string;
+  numeroMain: string;
+  coordenadasMain: string;
+}
+
 // All Form Data
 interface FormData {
   preparacion: PreparacionData;
@@ -81,6 +89,7 @@ interface FormData {
   templado: TempladoData;
   pulido: PulidoData;
   serigrafia: SerigrafiaData;
+  marca: MarcaData;
 }
 
 interface FormDataContextType {
@@ -94,6 +103,7 @@ interface FormDataContextType {
   updateTemplado: (data: Partial<TempladoData>) => void;
   updatePulido: (data: Partial<PulidoData>) => void;
   updateSerigrafia: (data: Partial<SerigrafiaData>) => void;
+  updateMarca: (data: Partial<MarcaData>) => void;
 }
 
 const initialFormData: FormData = {
@@ -132,6 +142,12 @@ const initialFormData: FormData = {
     defroster_aplica: false,
     defroster_area: "",
   },
+  marca: {
+    marca: "",
+    colorMarca: "Negro", // Default value
+    numeroMain: "",
+    coordenadasMain: "",
+  },
 };
 
 const FormDataContext = createContext<FormDataContextType>({
@@ -145,6 +161,7 @@ const FormDataContext = createContext<FormDataContextType>({
   updateTemplado: () => {},
   updatePulido: () => {},
   updateSerigrafia: () => {},
+  updateMarca: () => {},
 });
 
 export function FormDataProvider({ children }: { children: ReactNode }) {
@@ -246,6 +263,16 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateMarca = (data: Partial<MarcaData>) => {
+    setFormData((prev) => ({
+      ...prev,
+      marca: {
+        ...prev.marca,
+        ...data,
+      },
+    }));
+  };
+
   return (
     <FormDataContext.Provider
       value={{
@@ -259,6 +286,7 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         updateTemplado,
         updatePulido,
         updateSerigrafia,
+        updateMarca,
       }}
     >
       {children}

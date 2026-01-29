@@ -1,8 +1,12 @@
 "use client";
 
 import { StepContainer } from "./StepContainer";
+import { useFormData } from "../wizard/FormDataContext";
 
 export function MarcaStep() {
+  const { formData, updateMarca } = useFormData();
+  const { marca, colorMarca, numeroMain, coordenadasMain } = formData.marca;
+
   return (
     <StepContainer
       title="Marca"
@@ -20,6 +24,8 @@ export function MarcaStep() {
             type="text"
             id="marca"
             name="marca"
+            value={marca}
+            onChange={(e) => updateMarca({ marca: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
             placeholder="Agregue el nombre de la marca"
           />
@@ -34,6 +40,8 @@ export function MarcaStep() {
           <select
             id="color-marca"
             name="color-marca"
+            value={colorMarca}
+            onChange={(e) => updateMarca({ colorMarca: e.target.value })}
             className="w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
           >
             <option>Negro</option>
@@ -51,6 +59,8 @@ export function MarcaStep() {
             type="text"
             id="numero-main"
             name="numero-main"
+            value={numeroMain}
+            onChange={(e) => updateMarca({ numeroMain: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
             placeholder="Ingrese el número de main"
           />
@@ -66,6 +76,8 @@ export function MarcaStep() {
             type="text"
             id="coordenadas-main"
             name="coordenadas-main"
+            value={coordenadasMain}
+            onChange={(e) => updateMarca({ coordenadasMain: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
             placeholder="Ej: X:100, Y:200"
           />
