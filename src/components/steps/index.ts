@@ -4,5 +4,6 @@ export { CorteStep } from "./CorteStep";
 export { PulidoStep } from "./PulidoStep";
 export { BarrenosStep } from "./BarrenosStep";
 export { MarcaStep } from "./MarcaStep";
+export { SerigrafiaStep } from "./SerigrafiaStep";
 export { TempladoStep } from "./TempladoStep";
 export { CalidadStep } from "./CalidadStep";

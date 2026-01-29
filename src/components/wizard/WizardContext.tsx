@@ -14,7 +14,9 @@ export const WIZARD_STEPS: Step[] = [
   { id: "corte", label: "Corte", shortLabel: "Corte" },
   { id: "pulido", label: "Pulido", shortLabel: "Pulido" },
   { id: "barrenos", label: "Barrenos", shortLabel: "Barr" },
-      { id: "marca", label: "Marca", shortLabel: "Mar" },  { id: "templado", label: "Templado", shortLabel: "Temp" },
+  { id: "marca", label: "Marca", shortLabel: "Mar" },
+  { id: "serigrafia", label: "Serigrafía", shortLabel: "Serig" },
+  { id: "templado", label: "Templado", shortLabel: "Temp" },
   { id: "calidad", label: "Calidad", shortLabel: "QA" },
 ];
 

@@ -8,16 +8,15 @@ export function BarrenosStep() {
   const { formData, updateBarrenos } = useFormData();
   const { aplica, cantidadBarrenos, barrenos } = formData.barrenos;
 
-  const handleAplicaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const isChecked = e.target.checked;
-    if (!isChecked) {
+  const handleAplicaChange = (newAplicaState: boolean) => {
+    if (!newAplicaState) {
       updateBarrenos({
-        aplica: isChecked,
+        aplica: false,
         cantidadBarrenos: 0,
         barrenos: [],
       });
     } else {
-      updateBarrenos({ aplica: isChecked });
+      updateBarrenos({ aplica: true });
     }
   };
 
@@ -56,21 +55,44 @@ export function BarrenosStep() {
       description="Configuración de perforaciones y orificios en el vidrio."
     >
       <div className="space-y-6">
-        <div className="flex items-center space-x-2 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-          <input
-            type="checkbox"
-            id="aplica"
-            checked={aplica}
-            onChange={handleAplicaChange}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          <label
-            htmlFor="aplica"
-            className="text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Aplica
-          </label>
-        </div>
+        <fieldset className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+          <legend className="text-sm font-medium text-gray-700 dark:text-gray-300 px-2">
+            Aplicación de Barrenos
+          </legend>
+          <div className="flex items-center justify-around mt-2">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="aplica-si"
+                checked={aplica}
+                onChange={() => handleAplicaChange(true)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label
+                htmlFor="aplica-si"
+                className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Aplica
+              </label>
+            </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="aplica-no"
+                checked={!aplica}
+                onChange={() => handleAplicaChange(false)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label
+                htmlFor="aplica-no"
+                className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                No Aplica
+              </label>
+            </div>
+          </div>
+        </fieldset>
+
 
         {aplica && (
           <div className="space-y-6">

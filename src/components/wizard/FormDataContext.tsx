@@ -64,6 +64,14 @@ interface TempladoData {
   curvatura: string;
 }
 
+// Serigrafia Step Data
+interface SerigrafiaData {
+  aplica: boolean;
+  color: "negro" | "otro" | "";
+  defroster_aplica: boolean;
+  defroster_area: string;
+}
+
 // All Form Data
 interface FormData {
   preparacion: PreparacionData;
@@ -72,6 +80,7 @@ interface FormData {
   barrenos: BarrenosData;
   templado: TempladoData;
   pulido: PulidoData;
+  serigrafia: SerigrafiaData;
 }
 
 interface FormDataContextType {
@@ -84,6 +93,7 @@ interface FormDataContextType {
   updateBarrenos: (data: Partial<BarrenosData>) => void;
   updateTemplado: (data: Partial<TempladoData>) => void;
   updatePulido: (data: Partial<PulidoData>) => void;
+  updateSerigrafia: (data: Partial<SerigrafiaData>) => void;
 }
 
 const initialFormData: FormData = {
@@ -116,6 +126,12 @@ const initialFormData: FormData = {
     metrosLineales: "",
     tipoPulido: "",
   },
+  serigrafia: {
+    aplica: false,
+    color: "",
+    defroster_aplica: false,
+    defroster_area: "",
+  },
 };
 
 const FormDataContext = createContext<FormDataContextType>({
@@ -128,6 +144,7 @@ const FormDataContext = createContext<FormDataContextType>({
   updateBarrenos: () => {},
   updateTemplado: () => {},
   updatePulido: () => {},
+  updateSerigrafia: () => {},
 });
 
 export function FormDataProvider({ children }: { children: ReactNode }) {
@@ -219,6 +236,16 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateSerigrafia = (data: Partial<SerigrafiaData>) => {
+    setFormData((prev) => ({
+      ...prev,
+      serigrafia: {
+        ...prev.serigrafia,
+        ...data,
+      },
+    }));
+  };
+
   return (
     <FormDataContext.Provider
       value={{
@@ -231,6 +258,7 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         updateBarrenos,
         updateTemplado,
         updatePulido,
+        updateSerigrafia,
       }}
     >
       {children}
