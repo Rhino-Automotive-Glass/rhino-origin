@@ -7,7 +7,7 @@ type EspesorOption = "4" | "5" | "6" | "otro";
 type OrigenOption = "original" | "plantilla" | "unidad" | "plano" | "otro";
 
 interface PreparacionData {
-  espesor: EspesorOption | "";
+  espesores: EspesorOption[];
   espesorCustom: string;
   tolerancia: string;
   origen: OrigenOption | "";
@@ -55,13 +55,13 @@ interface PulidoData {
 }
 
 // Templado Step Data
-type TipoTempladoOption = "Maquila" | "Fábrica" | "";
-export type TipoAsociadoOption = "Plano" | "Molde" | "";
+type TipoMoldeOption = "Plano" | "Cilíndrico" | "Esférico" | "Cónico" | "";
+type TipoProcesoOption = "Maquila" | "Fábrica" | "";
 
 interface TempladoData {
-  tipoTemplado: TipoTempladoOption;
-  tipoAsociado: TipoAsociadoOption;
-  curvatura: string;
+  tipoMolde: TipoMoldeOption;
+  tipoProceso: TipoProcesoOption;
+  radioCilindro: string;
 }
 
 // Serigrafia Step Data
@@ -98,7 +98,7 @@ interface FormDataContextType {
 
 const initialFormData: FormData = {
   preparacion: {
-    espesor: "",
+    espesores: [],
     espesorCustom: "",
     tolerancia: "",
     origen: "",
@@ -118,9 +118,9 @@ const initialFormData: FormData = {
     barrenos: [],
   },
   templado: {
-    tipoTemplado: "",
-    tipoAsociado: "",
-    curvatura: "",
+    tipoMolde: "",
+    tipoProceso: "",
+    radioCilindro: "",
   },
   pulido: {
     metrosLineales: "",

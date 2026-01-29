@@ -11,14 +11,28 @@ type OrigenOption = (typeof ORIGEN_OPTIONS)[number];
 
 export function PreparacionStep() {
   const { formData, updatePreparacion } = useFormData();
-  const { espesor, espesorCustom, tolerancia, origen, origenCustom } = formData.preparacion;
+  const { espesores, espesorCustom, tolerancia, origen, origenCustom } = formData.preparacion;
 
-  const getEspesorDisplayValue = () => {
-    if (!espesor) return null;
-    if (espesor === "otro") {
-      return espesorCustom ? `${espesorCustom}mm` : null;
+  const handleEspesorChange = (option: EspesorOption) => {
+    const newEspesores = espesores.includes(option)
+      ? espesores.filter((item) => item !== option)
+      : [...espesores, option];
+
+    const updates: Partial<typeof formData.preparacion> = { espesores: newEspesores };
+    if (!newEspesores.includes("otro")) {
+      updates.espesorCustom = "";
     }
-    return `${espesor}mm`;
+    updatePreparacion(updates);
+  };
+  
+  const getEspesorDisplayValue = () => {
+    if (espesores.length === 0) return null;
+    return espesores.map(e => {
+      if (e === 'otro') {
+        return espesorCustom ? `${espesorCustom}mm (Otro)` : 'Otro';
+      }
+      return `${e}mm`;
+    }).join(', ');
   };
 
   const getOrigenDisplayValue = () => {
@@ -49,7 +63,7 @@ export function PreparacionStep() {
             )}
           </div>
 
-          {/* Radio Button Group */}
+          {/* Checkbox Group */}
           <div className="space-y-3">
             <div className="flex flex-wrap gap-4">
               {ESPESOR_OPTIONS.map((option) => (
@@ -59,18 +73,18 @@ export function PreparacionStep() {
                     flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer
                     transition-all duration-200
                     ${
-                      espesor === option
+                      espesores.includes(option)
                         ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
                         : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500"
                     }
                   `}
                 >
                   <input
-                    type="radio"
+                    type="checkbox"
                     name="espesor"
                     value={option}
-                    checked={espesor === option}
-                    onChange={(e) => updatePreparacion({ espesor: e.target.value as EspesorOption })}
+                    checked={espesores.includes(option)}
+                    onChange={() => handleEspesorChange(option)}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="font-medium">
@@ -81,7 +95,7 @@ export function PreparacionStep() {
             </div>
 
             {/* Custom Value Input */}
-            {espesor === "otro" && (
+            {espesores.includes("otro") && (
               <div className="mt-3 max-w-xs">
                 <label
                   htmlFor="espesorCustom"
