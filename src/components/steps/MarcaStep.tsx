@@ -21,6 +21,7 @@ export function MarcaStep() {
             id="marca"
             name="marca"
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+            placeholder="Agregue el nombre de la marca"
           />
         </div>
         <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
@@ -51,6 +52,7 @@ export function MarcaStep() {
             id="numero-main"
             name="numero-main"
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+            placeholder="Ingrese el número de main"
           />
         </div>
         <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
@@ -65,6 +67,7 @@ export function MarcaStep() {
             id="coordenadas-main"
             name="coordenadas-main"
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+            placeholder="Ej: X:100, Y:200"
           />
         </div>
       </div>
