@@ -46,7 +46,7 @@ interface BarrenosData {
 }
 
 // Pulido Step Data
-const TIPO_PULIDO_OPTIONS = ["2 Pits", "4", "Mixto"] as const;
+const TIPO_PULIDO_OPTIONS = ["2", "4", "Mixto"] as const;
 type TipoPulidoOption = (typeof TIPO_PULIDO_OPTIONS)[number];
 
 interface PulidoData {

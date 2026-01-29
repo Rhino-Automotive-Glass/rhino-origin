@@ -69,10 +69,10 @@ export function SerigrafiaStep() {
         </fieldset>
 
         {formData.serigrafia.aplica && (
-          <div>
+          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
             <label
               htmlFor="color-serigrafia"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               Color
             </label>
@@ -90,10 +90,10 @@ export function SerigrafiaStep() {
         )}
 
 
-        <div>
+        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <label
             htmlFor="defroster"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Defroster (Área Térmica)
           </label>
@@ -110,10 +110,10 @@ export function SerigrafiaStep() {
         </div>
 
         {formData.serigrafia.defroster_aplica && (
-          <div>
+          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
             <label
               htmlFor="defroster-area"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               Área total en m²
             </label>

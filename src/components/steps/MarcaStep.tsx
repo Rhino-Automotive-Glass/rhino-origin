@@ -9,10 +9,10 @@ export function MarcaStep() {
       description="Configuración de la identidad visual, sellos y referencias de ubicación del Main en la pieza."
     >
       <div className="space-y-4">
-        <div>
+        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <label
             htmlFor="marca"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Marca
           </label>
@@ -23,26 +23,26 @@ export function MarcaStep() {
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
           />
         </div>
-        <div>
+        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <label
             htmlFor="color-marca"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Color de Marca
           </label>
           <select
             id="color-marca"
             name="color-marca"
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-gray-800"
+            className="w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
           >
             <option>Negro</option>
             <option>Otro</option>
           </select>
         </div>
-        <div>
+        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <label
             htmlFor="numero-main"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Número de Main
           </label>
@@ -53,10 +53,10 @@ export function MarcaStep() {
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
           />
         </div>
-        <div>
+        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <label
             htmlFor="coordenadas-main"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Coordenadas del Main
           </label>
