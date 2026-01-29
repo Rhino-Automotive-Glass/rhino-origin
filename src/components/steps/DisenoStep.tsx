@@ -7,9 +7,12 @@ import { useFormData } from "../wizard";
 const ACCEPTED_TYPES = {
   images: ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"],
   text: ["text/plain"],
+  cad: ["application/dxf", "application/acad", "application/x-acad", "application/x-autocad", "image/vnd.dxf", "image/x-dxf"],
 };
 
-const ACCEPTED_EXTENSIONS = ".jpg,.jpeg,.png,.gif,.webp,.svg,.txt";
+const ACCEPTED_EXTENSIONS = ".jpg,.jpeg,.png,.gif,.webp,.svg,.txt,.dxf,.dwg";
+
+const CAD_EXTENSIONS = [".dxf", ".dwg"];
 
 export function DisenoStep() {
   const { formData, addDisenoFile, removeDisenoFile } = useFormData();
@@ -17,15 +20,25 @@ export function DisenoStep() {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const getFileExtension = (filename: string): string => {
+    return filename.toLowerCase().slice(filename.lastIndexOf("."));
+  };
+
   const isValidFileType = (file: File): boolean => {
+    const extension = getFileExtension(file.name);
     return (
       ACCEPTED_TYPES.images.includes(file.type) ||
-      ACCEPTED_TYPES.text.includes(file.type)
+      ACCEPTED_TYPES.text.includes(file.type) ||
+      ACCEPTED_TYPES.cad.includes(file.type) ||
+      CAD_EXTENSIONS.includes(extension)
     );
   };
 
-  const getFileType = (file: File): "image" | "text" => {
-    return ACCEPTED_TYPES.images.includes(file.type) ? "image" : "text";
+  const getFileType = (file: File): "image" | "text" | "cad" => {
+    if (ACCEPTED_TYPES.images.includes(file.type)) return "image";
+    const extension = getFileExtension(file.name);
+    if (CAD_EXTENSIONS.includes(extension) || ACCEPTED_TYPES.cad.includes(file.type)) return "cad";
+    return "text";
   };
 
   const processFiles = useCallback((fileList: FileList | File[]) => {
@@ -144,7 +157,7 @@ export function DisenoStep() {
             <span className="font-semibold">Click para subir</span> o arrastra y suelta
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Imágenes (JPG, PNG, GIF, WebP, SVG) o archivos TXT
+            Imágenes (JPG, PNG, GIF, WebP, SVG), archivos TXT o CAD (DXF, DWG)
           </p>
         </div>
 
@@ -168,6 +181,22 @@ export function DisenoStep() {
                         alt={uploadedFile.file.name}
                         className="w-full h-full object-cover"
                       />
+                    </div>
+                  ) : uploadedFile.type === "cad" ? (
+                    <div className="w-12 h-12 flex-shrink-0 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <svg
+                        className="w-6 h-6 text-blue-500 dark:text-blue-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+                        />
+                      </svg>
                     </div>
                   ) : (
                     <div className="w-12 h-12 flex-shrink-0 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center">

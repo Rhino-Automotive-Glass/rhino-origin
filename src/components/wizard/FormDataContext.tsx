@@ -19,7 +19,7 @@ interface UploadedFile {
   id: string;
   file: File;
   preview: string | null;
-  type: "image" | "text";
+  type: "image" | "text" | "cad";
 }
 
 interface DisenoData {
