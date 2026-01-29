@@ -6,8 +6,8 @@ export function ProgressBar() {
   const { currentStep, steps, goToStep } = useWizard();
 
   return (
-    <div className="w-full py-6 px-4">
-      <div className="flex items-center justify-between relative">
+    <div className="w-full py-6 px-4 overflow-x-auto sm:overflow-x-visible scrollbar-hide">
+      <div className="flex items-center sm:justify-between relative min-w-max sm:min-w-0">
         {/* Progress line background */}
         <div className="absolute left-0 right-0 top-[25px] h-1 bg-gray-200 dark:bg-gray-600 z-0" />
 
@@ -23,6 +23,7 @@ export function ProgressBar() {
         {steps.map((step, index) => {
           const isCompleted = index < currentStep;
           const isCurrent = index === currentStep;
+          const isLast = index === steps.length - 1;
 
           return (
             <button
@@ -31,6 +32,7 @@ export function ProgressBar() {
               className={`
                 relative z-10 flex flex-col items-center group cursor-pointer
                 transition-all duration-200 hover:scale-105
+                ${isLast ? '' : 'mr-6 sm:mr-0'}
               `}
             >
               {/* Circle indicator */}
