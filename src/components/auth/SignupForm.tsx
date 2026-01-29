@@ -1,13 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from '@/app/lib/auth/actions'
+import { useRouter } from 'next/navigation'
+import { signUp } from '@/app/lib/auth/actions'
 import { AuthErrorMessage } from './AuthErrorMessage'
 import Link from 'next/link'
 
-export function LoginForm() {
+export function SignupForm() {
   const [error, setError] = useState<string>()
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -17,12 +19,22 @@ export function LoginForm() {
     const formData = new FormData(e.currentTarget)
     const email = formData.get('email') as string
     const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirmPassword') as string
 
-    const result = await signIn(email, password)
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden')
+      setLoading(false)
+      return
+    }
+
+    const result = await signUp(email, password)
 
     if (result?.error) {
       setError(result.error)
       setLoading(false)
+    } else if (result?.success) {
+      alert('Te has registrado, confirma tu correo electrónico')
+      router.push('/')
     }
   }
 
@@ -59,7 +71,26 @@ export function LoginForm() {
           id="password"
           name="password"
           type="password"
-          autoComplete="current-password"
+          autoComplete="new-password"
+          required
+          minLength={6}
+          className="input-base"
+          placeholder="••••••••"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="confirmPassword"
+          className="block text-sm font-medium text-slate-700 mb-2"
+        >
+          Confirmar Contraseña
+        </label>
+        <input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          autoComplete="new-password"
           required
           minLength={6}
           className="input-base"
@@ -94,20 +125,20 @@ export function LoginForm() {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            Iniciando sesión...
+            Creando cuenta...
           </span>
         ) : (
-          'Iniciar Sesión'
+          'Crear Cuenta'
         )}
       </button>
 
       <p className="text-center text-sm text-slate-600">
-        ¿No tienes una cuenta?{' '}
+        ¿Ya tienes una cuenta?{' '}
         <Link
-          href="/signup"
+          href="/login"
           className="font-medium text-blue-600 hover:text-blue-500"
         >
-          Regístrate
+          Iniciar sesión
         </Link>
       </p>
     </form>
