@@ -56,11 +56,6 @@ export function PreparacionStep() {
         <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Espesor</h3>
-            {espesorDisplayValue && (
-              <span className="px-2 py-1 bg-blue-100 dark:bg-orange-500/50 text-blue-700 dark:text-white text-sm font-medium rounded">
-                {espesorDisplayValue}
-              </span>
-            )}
           </div>
 
           {/* Checkbox Group */}
@@ -142,11 +137,6 @@ export function PreparacionStep() {
         <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Origen</h3>
-            {origenDisplayValue && (
-              <span className="px-2 py-1 bg-blue-100 dark:bg-orange-500/50 text-blue-700 dark:text-white text-sm font-medium rounded">
-                {origenDisplayValue}
-              </span>
-            )}
           </div>
 
           {/* Radio Button Group */}
