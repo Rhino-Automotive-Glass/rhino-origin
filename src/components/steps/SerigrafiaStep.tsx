@@ -37,11 +37,12 @@ export function SerigrafiaStep() {
           <div className="flex items-center justify-around mt-2">
             <div className="flex items-center">
               <input
-                type="checkbox"
+                type="radio"
                 id="serigrafia-aplica"
+                name="aplicaSerigrafia"
                 checked={formData.serigrafia.aplica}
                 onChange={() => handleSerigrafiaChange(true)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <label
                 htmlFor="serigrafia-aplica"
@@ -52,11 +53,12 @@ export function SerigrafiaStep() {
             </div>
             <div className="flex items-center">
               <input
-                type="checkbox"
+                type="radio"
                 id="serigrafia-no-aplica"
+                name="aplicaSerigrafia"
                 checked={!formData.serigrafia.aplica}
                 onChange={() => handleSerigrafiaChange(false)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <label
                 htmlFor="serigrafia-no-aplica"
