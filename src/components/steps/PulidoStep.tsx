@@ -3,7 +3,7 @@
 import { StepContainer } from "./StepContainer";
 import { useFormData } from "../wizard";
 
-const TIPO_PULIDO_OPTIONS = ["2 Pits", "4", "Mixto"] as const;
+const TIPO_PULIDO_OPTIONS = ["2", "4", "Mixto"] as const;
 type TipoPulidoOption = (typeof TIPO_PULIDO_OPTIONS)[number];
 
 export function PulidoStep() {
