@@ -1,10 +1,105 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useWizard } from "./WizardContext";
+import { useFormData } from "./FormDataContext";
+import { createClient } from "@/app/lib/supabase/client";
 
 export function WizardNavigation() {
   const { prevStep, nextStep, isFirstStep, isLastStep, currentStep, steps } =
     useWizard();
+  const { formData } = useFormData();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) {
+        setUserEmail(user.email);
+      }
+    });
+  }, []);
+
+  const handleFinalizar = () => {
+    const now = new Date();
+    const originSheet = {
+      metadata: {
+        creadoPor: userEmail || "Usuario desconocido",
+        fechaGuardado: now.toISOString(),
+        fechaFormateada: now.toLocaleString("es-MX", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+      },
+      InformacionOrigen: {
+        rhinoCode: formData.orderInfo.rhinoCode || null,
+        descripcion: formData.orderInfo.descripcion || null,
+        claveExterna: formData.orderInfo.claveExterna || null,
+      },
+      Preparacion: {
+        espesores: formData.preparacion.espesores,
+        espesorCustom: formData.preparacion.espesorCustom || null,
+        tolerancia: formData.preparacion.tolerancia || null,
+        origen: formData.preparacion.origen || null,
+        origenCustom: formData.preparacion.origenCustom || null,
+      },
+      Diseno: {
+        archivos: formData.diseno.persistedFiles.map((file) => ({
+          id: file.id,
+          nombre: file.filename,
+          tipo: file.file_type,
+          tamaño: file.file_size,
+          url: file.blob_url,
+        })),
+      },
+      Corte: {
+        ejeX: formData.corte.ejeX || null,
+        ejeY: formData.corte.ejeY || null,
+        area: formData.corte.area || null,
+      },
+      Barrenos: {
+        aplica: formData.barrenos.aplica,
+        cantidad: formData.barrenos.cantidadBarrenos,
+        barrenos: formData.barrenos.barrenos.map((b, i) => ({
+          numero: i + 1,
+          posicionX: b.x || null,
+          posicionY: b.y || null,
+          diametro: b.diametro || null,
+        })),
+      },
+      Templado: {
+        tipoMolde: formData.templado.tipoMolde || null,
+        tipoProceso: formData.templado.tipoProceso || null,
+        radioCilindro: formData.templado.radioCilindro || null,
+      },
+      Pulido: {
+        metrosLineales: formData.pulido.metrosLineales || null,
+        tipoPulido: formData.pulido.tipoPulido || null,
+      },
+      Serigrafia: {
+        aplica: formData.serigrafia.aplica,
+        color: formData.serigrafia.color || null,
+        defroster: {
+          aplica: formData.serigrafia.defroster_aplica,
+          area: formData.serigrafia.defroster_area || null,
+        },
+      },
+      Marca: {
+        marca: formData.marca.marca || null,
+        colorMarca: formData.marca.colorMarca || null,
+        numeroMain: formData.marca.numeroMain || null,
+        coordenadasMain: formData.marca.coordenadasMain || null,
+      },
+    };
+
+    console.log("=== ORIGIN SHEET ===");
+    console.log(JSON.stringify(originSheet, null, 2));
+    console.log("====================");
+  };
 
   return (
     <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
@@ -42,17 +137,8 @@ export function WizardNavigation() {
       </span>
 
       <button
-        onClick={nextStep}
-        disabled={isLastStep}
-        className={`
-          flex items-center gap-2 px-6 py-3 rounded-lg font-medium
-          transition-all duration-200
-          ${
-            isLastStep
-              ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-              : "bg-blue-600 text-white hover:bg-blue-700"
-          }
-        `}
+        onClick={isLastStep ? handleFinalizar : nextStep}
+        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700"
       >
         {isLastStep ? "Finalizar" : "Siguiente"}
         {!isLastStep && (
@@ -67,6 +153,21 @@ export function WizardNavigation() {
               strokeLinejoin="round"
               strokeWidth={2}
               d="M9 5l7 7-7 7"
+            />
+          </svg>
+        )}
+        {isLastStep && (
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
             />
           </svg>
         )}

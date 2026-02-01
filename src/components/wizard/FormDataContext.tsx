@@ -89,8 +89,16 @@ interface MarcaData {
   coordenadasMain: string;
 }
 
+// Order Info (Header)
+interface OrderInfo {
+  rhinoCode: string;
+  descripcion: string;
+  claveExterna: string;
+}
+
 // All Form Data
 interface FormData {
+  orderInfo: OrderInfo;
   preparacion: PreparacionData;
   diseno: DisenoData;
   corte: CorteData;
@@ -103,6 +111,7 @@ interface FormData {
 
 interface FormDataContextType {
   formData: FormData;
+  updateOrderInfo: (data: Partial<OrderInfo>) => void;
   updatePreparacion: (data: Partial<PreparacionData>) => void;
   updateDiseno: (data: Partial<DisenoData>) => void;
   addDisenoFile: (file: UploadedFile) => void;
@@ -123,6 +132,11 @@ interface FormDataContextType {
 }
 
 const initialFormData: FormData = {
+  orderInfo: {
+    rhinoCode: "",
+    descripcion: "",
+    claveExterna: "",
+  },
   preparacion: {
     espesores: [],
     espesorCustom: "",
@@ -170,6 +184,7 @@ const initialFormData: FormData = {
 
 const FormDataContext = createContext<FormDataContextType>({
   formData: initialFormData,
+  updateOrderInfo: () => {},
   updatePreparacion: () => {},
   updateDiseno: () => {},
   addDisenoFile: () => {},
@@ -190,6 +205,16 @@ const FormDataContext = createContext<FormDataContextType>({
 
 export function FormDataProvider({ children }: { children: ReactNode }) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
+
+  const updateOrderInfo = useCallback((data: Partial<OrderInfo>) => {
+    setFormData((prev) => ({
+      ...prev,
+      orderInfo: {
+        ...prev.orderInfo,
+        ...data,
+      },
+    }));
+  }, []);
 
   const updatePreparacion = useCallback((data: Partial<PreparacionData>) => {
     setFormData((prev) => ({
@@ -369,6 +394,7 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
     <FormDataContext.Provider
       value={{
         formData,
+        updateOrderInfo,
         updatePreparacion,
         updateDiseno,
         addDisenoFile,
