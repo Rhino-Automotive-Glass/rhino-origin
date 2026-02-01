@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import type {
+  FileType,
+  UploadStatus,
+  PersistedFile,
+  UploadingFile,
+} from "@/types/upload";
 
 // Preparacion Step Data
 type EspesorOption = "4" | "5" | "6" | "otro";
@@ -14,7 +20,7 @@ interface PreparacionData {
   origenCustom: string;
 }
 
-// Diseno Step Data
+// Diseno Step Data - Legacy (kept for compatibility during transition)
 interface UploadedFile {
   id: string;
   file: File;
@@ -24,6 +30,9 @@ interface UploadedFile {
 
 interface DisenoData {
   files: UploadedFile[];
+  // New persisted files support
+  persistedFiles: PersistedFile[];
+  uploadingFiles: UploadingFile[];
 }
 
 // Corte Step Data
@@ -98,6 +107,13 @@ interface FormDataContextType {
   updateDiseno: (data: Partial<DisenoData>) => void;
   addDisenoFile: (file: UploadedFile) => void;
   removeDisenoFile: (id: string) => void;
+  // New persisted file methods
+  setPersistedFiles: (files: PersistedFile[]) => void;
+  addPersistedFile: (file: PersistedFile) => void;
+  removePersistedFile: (id: string) => void;
+  addUploadingFile: (file: UploadingFile) => void;
+  updateUploadingFile: (id: string, updates: Partial<UploadingFile>) => void;
+  removeUploadingFile: (id: string) => void;
   updateCorte: (data: Partial<CorteData>) => void;
   updateBarrenos: (data: Partial<BarrenosData>) => void;
   updateTemplado: (data: Partial<TempladoData>) => void;
@@ -116,6 +132,8 @@ const initialFormData: FormData = {
   },
   diseno: {
     files: [],
+    persistedFiles: [],
+    uploadingFiles: [],
   },
   corte: {
     ejeX: "",
@@ -156,6 +174,12 @@ const FormDataContext = createContext<FormDataContextType>({
   updateDiseno: () => {},
   addDisenoFile: () => {},
   removeDisenoFile: () => {},
+  setPersistedFiles: () => {},
+  addPersistedFile: () => {},
+  removePersistedFile: () => {},
+  addUploadingFile: () => {},
+  updateUploadingFile: () => {},
+  removeUploadingFile: () => {},
   updateCorte: () => {},
   updateBarrenos: () => {},
   updateTemplado: () => {},
@@ -167,7 +191,7 @@ const FormDataContext = createContext<FormDataContextType>({
 export function FormDataProvider({ children }: { children: ReactNode }) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
 
-  const updatePreparacion = (data: Partial<PreparacionData>) => {
+  const updatePreparacion = useCallback((data: Partial<PreparacionData>) => {
     setFormData((prev) => ({
       ...prev,
       preparacion: {
@@ -175,9 +199,9 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         ...data,
       },
     }));
-  };
+  }, []);
 
-  const updateDiseno = (data: Partial<DisenoData>) => {
+  const updateDiseno = useCallback((data: Partial<DisenoData>) => {
     setFormData((prev) => ({
       ...prev,
       diseno: {
@@ -185,9 +209,9 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         ...data,
       },
     }));
-  };
+  }, []);
 
-  const addDisenoFile = (file: UploadedFile) => {
+  const addDisenoFile = useCallback((file: UploadedFile) => {
     setFormData((prev) => ({
       ...prev,
       diseno: {
@@ -195,9 +219,9 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         files: [...prev.diseno.files, file],
       },
     }));
-  };
+  }, []);
 
-  const removeDisenoFile = (id: string) => {
+  const removeDisenoFile = useCallback((id: string) => {
     setFormData((prev) => {
       const fileToRemove = prev.diseno.files.find((f) => f.id === id);
       if (fileToRemove?.preview) {
@@ -211,9 +235,77 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         },
       };
     });
-  };
+  }, []);
 
-  const updatePulido = (data: Partial<PulidoData>) => {
+  const setPersistedFiles = useCallback((files: PersistedFile[]) => {
+    setFormData((prev) => ({
+      ...prev,
+      diseno: {
+        ...prev.diseno,
+        persistedFiles: files,
+      },
+    }));
+  }, []);
+
+  const addPersistedFile = useCallback((file: PersistedFile) => {
+    setFormData((prev) => ({
+      ...prev,
+      diseno: {
+        ...prev.diseno,
+        persistedFiles: [...prev.diseno.persistedFiles, file],
+      },
+    }));
+  }, []);
+
+  const removePersistedFile = useCallback((id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      diseno: {
+        ...prev.diseno,
+        persistedFiles: prev.diseno.persistedFiles.filter((f) => f.id !== id),
+      },
+    }));
+  }, []);
+
+  const addUploadingFile = useCallback((file: UploadingFile) => {
+    setFormData((prev) => ({
+      ...prev,
+      diseno: {
+        ...prev.diseno,
+        uploadingFiles: [...prev.diseno.uploadingFiles, file],
+      },
+    }));
+  }, []);
+
+  const updateUploadingFile = useCallback((id: string, updates: Partial<UploadingFile>) => {
+    setFormData((prev) => ({
+      ...prev,
+      diseno: {
+        ...prev.diseno,
+        uploadingFiles: prev.diseno.uploadingFiles.map((f) =>
+          f.id === id ? { ...f, ...updates } : f
+        ),
+      },
+    }));
+  }, []);
+
+  const removeUploadingFile = useCallback((id: string) => {
+    setFormData((prev) => {
+      const fileToRemove = prev.diseno.uploadingFiles.find((f) => f.id === id);
+      if (fileToRemove?.preview) {
+        URL.revokeObjectURL(fileToRemove.preview);
+      }
+      return {
+        ...prev,
+        diseno: {
+          ...prev.diseno,
+          uploadingFiles: prev.diseno.uploadingFiles.filter((f) => f.id !== id),
+        },
+      };
+    });
+  }, []);
+
+  const updatePulido = useCallback((data: Partial<PulidoData>) => {
     setFormData((prev) => ({
       ...prev,
       pulido: {
@@ -221,9 +313,9 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         ...data,
       },
     }));
-  };
+  }, []);
 
-  const updateCorte = (data: Partial<CorteData>) => {
+  const updateCorte = useCallback((data: Partial<CorteData>) => {
     setFormData((prev) => ({
       ...prev,
       corte: {
@@ -231,9 +323,9 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         ...data,
       },
     }));
-  };
+  }, []);
 
-  const updateBarrenos = (data: Partial<BarrenosData>) => {
+  const updateBarrenos = useCallback((data: Partial<BarrenosData>) => {
     setFormData((prev) => ({
       ...prev,
       barrenos: {
@@ -241,9 +333,9 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         ...data,
       },
     }));
-  };
+  }, []);
 
-  const updateTemplado = (data: Partial<TempladoData>) => {
+  const updateTemplado = useCallback((data: Partial<TempladoData>) => {
     setFormData((prev) => ({
       ...prev,
       templado: {
@@ -251,9 +343,9 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         ...data,
       },
     }));
-  };
+  }, []);
 
-  const updateSerigrafia = (data: Partial<SerigrafiaData>) => {
+  const updateSerigrafia = useCallback((data: Partial<SerigrafiaData>) => {
     setFormData((prev) => ({
       ...prev,
       serigrafia: {
@@ -261,9 +353,9 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         ...data,
       },
     }));
-  };
+  }, []);
 
-  const updateMarca = (data: Partial<MarcaData>) => {
+  const updateMarca = useCallback((data: Partial<MarcaData>) => {
     setFormData((prev) => ({
       ...prev,
       marca: {
@@ -271,7 +363,7 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         ...data,
       },
     }));
-  };
+  }, []);
 
   return (
     <FormDataContext.Provider
@@ -281,6 +373,12 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         updateDiseno,
         addDisenoFile,
         removeDisenoFile,
+        setPersistedFiles,
+        addPersistedFile,
+        removePersistedFile,
+        addUploadingFile,
+        updateUploadingFile,
+        removeUploadingFile,
         updateCorte,
         updateBarrenos,
         updateTemplado,

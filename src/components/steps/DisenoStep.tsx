@@ -1,63 +1,131 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { StepContainer } from "./StepContainer";
 import { useFormData } from "../wizard";
-
-const ACCEPTED_TYPES = {
-  images: ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"],
-  text: ["text/plain"],
-  cad: ["application/dxf", "application/acad", "application/x-acad", "application/x-autocad", "image/vnd.dxf", "image/x-dxf"],
-};
-
-const ACCEPTED_EXTENSIONS = ".jpg,.jpeg,.png,.gif,.webp,.svg,.txt,.dxf,.dwg";
-
-const CAD_EXTENSIONS = [".dxf", ".dwg"];
+import {
+  validateFile,
+  validateFileCount,
+  getFileType,
+  formatFileSize,
+  getFileExtension,
+  ACCEPTED_EXTENSIONS,
+  MAX_FILE_COUNT,
+} from "@/lib/upload/validation";
+import { uploadFile, deleteFile, listFiles } from "@/lib/upload/uploader";
+import type { UploadingFile, PersistedFile } from "@/types/upload";
 
 export function DisenoStep() {
-  const { formData, addDisenoFile, removeDisenoFile } = useFormData();
-  const files = formData.diseno.files;
+  const {
+    formData,
+    setPersistedFiles,
+    addPersistedFile,
+    removePersistedFile,
+    addUploadingFile,
+    updateUploadingFile,
+    removeUploadingFile,
+  } = useFormData();
+
+  const persistedFiles = formData.diseno.persistedFiles;
+  const uploadingFiles = formData.diseno.uploadingFiles;
   const [isDragging, setIsDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const getFileExtension = (filename: string): string => {
-    return filename.toLowerCase().slice(filename.lastIndexOf("."));
-  };
+  useEffect(() => {
+    setPortalContainer(document.body);
+  }, []);
 
-  const isValidFileType = (file: File): boolean => {
-    const extension = getFileExtension(file.name);
-    return (
-      ACCEPTED_TYPES.images.includes(file.type) ||
-      ACCEPTED_TYPES.text.includes(file.type) ||
-      ACCEPTED_TYPES.cad.includes(file.type) ||
-      CAD_EXTENSIONS.includes(extension)
-    );
-  };
+  // Load persisted files on mount
+  useEffect(() => {
+    async function loadFiles() {
+      setIsLoading(true);
+      const result = await listFiles();
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setPersistedFiles(result.files);
+      }
+      setIsLoading(false);
+    }
+    loadFiles();
+  }, [setPersistedFiles]);
 
-  const getFileType = (file: File): "image" | "text" | "cad" => {
-    if (ACCEPTED_TYPES.images.includes(file.type)) return "image";
-    const extension = getFileExtension(file.name);
-    if (CAD_EXTENSIONS.includes(extension) || ACCEPTED_TYPES.cad.includes(file.type)) return "cad";
-    return "text";
-  };
+  const totalFileCount = persistedFiles.length + uploadingFiles.length;
 
-  const processFiles = useCallback((fileList: FileList | File[]) => {
-    Array.from(fileList).forEach((file) => {
-      if (!isValidFileType(file)) {
+  const processFiles = useCallback(
+    async (fileList: FileList | File[]) => {
+      const files = Array.from(fileList);
+
+      // Validate file count
+      const countValidation = validateFileCount(totalFileCount, files.length);
+      if (!countValidation.valid) {
+        setError(countValidation.error || null);
         return;
       }
 
-      const fileType = getFileType(file);
-      const preview = fileType === "image" ? URL.createObjectURL(file) : null;
+      setError(null);
 
-      addDisenoFile({
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        file,
-        preview,
-        type: fileType,
-      });
-    });
-  }, [addDisenoFile]);
+      for (const file of files) {
+        // Validate individual file
+        const validation = validateFile(file);
+        if (!validation.valid) {
+          setError(validation.error || null);
+          continue;
+        }
+
+        const fileType = getFileType(file);
+        const preview = fileType === "image" ? URL.createObjectURL(file) : null;
+        const tempId = `uploading-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Add to uploading files
+        const uploadingFile: UploadingFile = {
+          id: tempId,
+          file,
+          preview,
+          type: fileType,
+          status: "uploading",
+          progress: 0,
+          retryCount: 0,
+        };
+
+        addUploadingFile(uploadingFile);
+
+        // Start upload
+        const result = await uploadFile({
+          file,
+          fileType,
+          onProgress: (progress) => {
+            updateUploadingFile(tempId, { progress });
+          },
+        });
+
+        if (result.success && result.persistedFile) {
+          // Remove from uploading, add to persisted
+          removeUploadingFile(tempId);
+          addPersistedFile(result.persistedFile);
+        } else {
+          // Mark as failed
+          updateUploadingFile(tempId, {
+            status: "failed",
+            error: result.error,
+          });
+        }
+      }
+    },
+    [
+      totalFileCount,
+      addUploadingFile,
+      updateUploadingFile,
+      removeUploadingFile,
+      addPersistedFile,
+    ]
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -91,25 +159,87 @@ export function DisenoStep() {
     [processFiles]
   );
 
-  const handleRemoveFile = useCallback((id: string) => {
-    removeDisenoFile(id);
-  }, [removeDisenoFile]);
+  const handleDeletePersisted = useCallback(
+    async (id: string) => {
+      setDeletingFileId(id);
+      const result = await deleteFile(id);
+      if (result.success) {
+        removePersistedFile(id);
+      } else {
+        setError(result.error || "Error al eliminar archivo");
+      }
+      setDeletingFileId(null);
+    },
+    [removePersistedFile]
+  );
+
+  const handleRemoveUploading = useCallback(
+    (id: string) => {
+      removeUploadingFile(id);
+    },
+    [removeUploadingFile]
+  );
+
+  const handleRetry = useCallback(
+    async (uploadingFile: UploadingFile) => {
+      updateUploadingFile(uploadingFile.id, {
+        status: "uploading",
+        progress: 0,
+        error: undefined,
+        retryCount: uploadingFile.retryCount + 1,
+      });
+
+      const result = await uploadFile({
+        file: uploadingFile.file,
+        fileType: uploadingFile.type,
+        onProgress: (progress) => {
+          updateUploadingFile(uploadingFile.id, { progress });
+        },
+      });
+
+      if (result.success && result.persistedFile) {
+        removeUploadingFile(uploadingFile.id);
+        addPersistedFile(result.persistedFile);
+      } else {
+        updateUploadingFile(uploadingFile.id, {
+          status: "failed",
+          error: result.error,
+        });
+      }
+    },
+    [updateUploadingFile, removeUploadingFile, addPersistedFile]
+  );
 
   const handleClick = () => {
     fileInputRef.current?.click();
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  // Get all file names for the summary list
+  const allFileNames = [
+    ...uploadingFiles.map((f) => ({
+      name: f.file.name,
+      isUploading: f.status === "uploading",
+      isFailed: f.status === "failed",
+    })),
+    ...persistedFiles.map((f) => ({
+      name: f.filename,
+      isUploading: false,
+      isFailed: false,
+    })),
+  ];
 
   return (
     <StepContainer
       title="Diseño"
       description="Especificaciones de diseño y geometría del vidrio automotriz."
     >
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
+
       <div className="space-y-4">
         {/* Upload Area */}
         <div
@@ -159,102 +289,267 @@ export function DisenoStep() {
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Imágenes (JPG, PNG, GIF, WebP, SVG), archivos TXT o CAD (DXF, DWG)
           </p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            Máximo 100MB por archivo, {MAX_FILE_COUNT} archivos en total
+          </p>
         </div>
 
-        {/* Uploaded Files List */}
-        {files.length > 0 && (
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+            <span className="ml-2 text-sm text-gray-500">Cargando archivos...</span>
+          </div>
+        )}
+
+        {/* File Names Summary */}
+        {!isLoading && totalFileCount > 0 && (
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Archivos subidos ({files.length})
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {files.map((uploadedFile) => (
-                <div
-                  key={uploadedFile.id}
-                  className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg"
+            <div className="flex flex-wrap gap-2">
+              {allFileNames.map((file, index) => (
+                <span
+                  key={index}
+                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                    file.isFailed
+                      ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                      : file.isUploading
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                      : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                  }`}
+                  title={file.name}
                 >
-                  {/* Preview */}
-                  {uploadedFile.type === "image" && uploadedFile.preview ? (
-                    <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-gray-100 dark:bg-gray-700">
-                      <img
-                        src={uploadedFile.preview}
-                        alt={uploadedFile.file.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : uploadedFile.type === "cad" ? (
-                    <div className="w-12 h-12 flex-shrink-0 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                      <svg
-                        className="w-6 h-6 text-blue-500 dark:text-blue-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
-                        />
-                      </svg>
-                    </div>
-                  ) : (
-                    <div className="w-12 h-12 flex-shrink-0 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                      <svg
-                        className="w-6 h-6 text-gray-400 dark:text-gray-500"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                    </div>
-                  )}
-
-                  {/* File Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {uploadedFile.file.name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatFileSize(uploadedFile.file.size)}
-                    </p>
-                  </div>
-
-                  {/* Remove Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveFile(uploadedFile.id);
-                    }}
-                    className="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition-colors"
-                    title="Eliminar archivo"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
+                  {file.isUploading && (
+                    <svg className="w-3 h-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                  </button>
-                </div>
+                  )}
+                  {file.isFailed && (
+                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                  <span className="truncate max-w-[150px]">{file.name}</span>
+                </span>
               ))}
             </div>
+
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              Ver archivos ({totalFileCount})
+            </button>
           </div>
         )}
       </div>
+
+      {/* Modal */}
+      {isModalOpen && portalContainer && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsModalOpen(false)}
+          />
+          <div className="relative bg-white dark:bg-gray-800 sm:rounded-xl shadow-xl w-full sm:max-w-3xl h-full sm:h-[70vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Archivos Subidos ({totalFileCount})
+              </h3>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {/* Uploading Files */}
+              {uploadingFiles.map((uploadingFile) => (
+                <div
+                  key={uploadingFile.id}
+                  className={`flex items-start gap-3 p-4 border rounded-lg ${
+                    uploadingFile.status === "failed"
+                      ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/10"
+                      : "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                  }`}
+                >
+                  {/* Preview */}
+                  <div className="flex-shrink-0">
+                    {uploadingFile.type === "image" && uploadingFile.preview ? (
+                      <div className="w-12 h-12 rounded overflow-hidden bg-gray-100 dark:bg-gray-600">
+                        <img
+                          src={uploadingFile.preview}
+                          alt={uploadingFile.file.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded bg-gray-100 dark:bg-gray-600 flex items-center justify-center">
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                          {getFileExtension(uploadingFile.file.name).slice(1)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* File Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p
+                        className="text-sm font-medium text-gray-900 dark:text-white truncate"
+                        title={uploadingFile.file.name}
+                      >
+                        {uploadingFile.file.name}
+                      </p>
+                      {/* Actions */}
+                      <div className="flex-shrink-0 flex items-center gap-1">
+                        {uploadingFile.status === "failed" && (
+                          <button
+                            onClick={() => handleRetry(uploadingFile)}
+                            className="p-1.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-all"
+                            title="Reintentar"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleRemoveUploading(uploadingFile.id)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-all"
+                          title="Eliminar"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatFileSize(uploadingFile.file.size)}
+                      </span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">•</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                        {getFileExtension(uploadingFile.file.name).slice(1)}
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    {uploadingFile.status === "uploading" && (
+                      <div className="mt-2 w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+                        <div
+                          className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadingFile.progress}%` }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Error Badge */}
+                    {uploadingFile.status === "failed" && (
+                      <span
+                        className="inline-flex items-center mt-2 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 cursor-help"
+                        title={uploadingFile.error || "Error al subir"}
+                      >
+                        Error al subir
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* Persisted Files */}
+              {persistedFiles.map((file) => (
+                <div
+                  key={file.id}
+                  className="flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                >
+                  {/* Preview */}
+                  <div className="flex-shrink-0">
+                    {file.file_type === "image" ? (
+                      <div className="w-12 h-12 rounded overflow-hidden bg-gray-100 dark:bg-gray-600">
+                        <img
+                          src={file.blob_url}
+                          alt={file.filename}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded bg-gray-100 dark:bg-gray-600 flex items-center justify-center">
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                          {getFileExtension(file.filename).slice(1)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* File Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p
+                        className="text-sm font-medium text-gray-900 dark:text-white truncate"
+                        title={file.filename}
+                      >
+                        {file.filename}
+                      </p>
+                      <button
+                        onClick={() => handleDeletePersisted(file.id)}
+                        disabled={deletingFileId === file.id}
+                        className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                        title="Eliminar archivo"
+                      >
+                        {deletingFileId === file.id ? (
+                          <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {formatFileSize(file.file_size)}
+                      </span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">•</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                        {getFileExtension(file.filename).slice(1)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Empty State */}
+              {totalFileCount === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    No hay archivos subidos
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>,
+        portalContainer
+      )}
     </StepContainer>
   );
 }
