@@ -8,7 +8,7 @@ import {
   WizardContent,
 } from "@/components/wizard";
 import { ThemeToggle } from "@/components/theme";
-import { OrderInfoSection } from "@/components/OrderInfoSection";
+import { OriginSheetInfoSection } from "@/components/OriginSheetInfoSection";
 
 export default function Home() {
   return (
@@ -49,8 +49,8 @@ export default function Home() {
             </div>
           </header>
 
-          {/* Order Info Section */}
-          <OrderInfoSection />
+          {/* Origin Sheet Info Section */}
+          <OriginSheetInfoSection />
 
           {/* Progress Bar */}
           <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">

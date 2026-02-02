@@ -36,9 +36,9 @@ export function WizardNavigation() {
         }),
       },
       InformacionOrigen: {
-        rhinoCode: formData.orderInfo.rhinoCode || null,
-        descripcion: formData.orderInfo.descripcion || null,
-        claveExterna: formData.orderInfo.claveExterna || null,
+        rhinoCode: formData.originSheetInfo.rhinoCode || null,
+        descripcion: formData.originSheetInfo.descripcion || null,
+        claveExterna: formData.originSheetInfo.claveExterna || null,
       },
       Preparacion: {
         espesores: formData.preparacion.espesores,

@@ -5,12 +5,12 @@ import { useFormData } from "./wizard/FormDataContext";
 import { ProductCodeSearch } from "./ProductCodeSearch";
 import { createClient } from "@/app/lib/supabase/client";
 
-const STORAGE_KEY = "rhino-order-info";
+const STORAGE_KEY = "rhino-origin-sheet-info";
 const DEBOUNCE_MS = 1000;
 
-export function OrderInfoSection() {
-  const { formData, updateOrderInfo } = useFormData();
-  const orderInfo = formData.orderInfo;
+export function OriginSheetInfoSection() {
+  const { formData, updateOriginSheetInfo } = useFormData();
+  const originSheetInfo = formData.originSheetInfo;
 
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -24,11 +24,12 @@ export function OrderInfoSection() {
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
-        if (parsed.orderInfo) {
-          updateOrderInfo({
-            rhinoCode: parsed.orderInfo.rhinoCode || parsed.orderInfo.codigoRhino || "",
-            descripcion: parsed.orderInfo.descripcion || "",
-            claveExterna: parsed.orderInfo.claveExterna || "",
+        if (parsed.originSheetInfo || parsed.orderInfo) {
+          const data = parsed.originSheetInfo || parsed.orderInfo;
+          updateOriginSheetInfo({
+            rhinoCode: data.rhinoCode || data.codigoRhino || "",
+            descripcion: data.descripcion || "",
+            claveExterna: data.claveExterna || "",
           });
         }
         if (parsed.lastSaved) {
@@ -46,13 +47,13 @@ export function OrderInfoSection() {
         setUserEmail(user.email);
       }
     });
-  }, [updateOrderInfo]);
+  }, [updateOriginSheetInfo]);
 
   // Debounced autosave
   useEffect(() => {
     if (!mounted) return;
 
-    const hasData = Object.values(orderInfo).some((value) => value.trim() !== "");
+    const hasData = Object.values(originSheetInfo).some((value) => value.trim() !== "");
     if (hasData) {
       setIsSaving(true);
     }
@@ -63,7 +64,7 @@ export function OrderInfoSection() {
         localStorage.setItem(
           STORAGE_KEY,
           JSON.stringify({
-            orderInfo,
+            originSheetInfo,
             lastSaved: now.toISOString(),
           })
         );
@@ -76,24 +77,24 @@ export function OrderInfoSection() {
       clearTimeout(timeoutId);
       setIsSaving(false);
     };
-  }, [orderInfo, mounted]);
+  }, [originSheetInfo, mounted]);
 
   const handleInputChange = useCallback(
     (field: "rhinoCode" | "descripcion" | "claveExterna") =>
       (e: React.ChangeEvent<HTMLInputElement>) => {
-        updateOrderInfo({ [field]: e.target.value });
+        updateOriginSheetInfo({ [field]: e.target.value });
       },
-    [updateOrderInfo]
+    [updateOriginSheetInfo]
   );
 
   const handleProductCodeChange = useCallback(
     (code: string, description?: string) => {
-      updateOrderInfo({
+      updateOriginSheetInfo({
         rhinoCode: code,
         ...(description !== undefined && { descripcion: description }),
       });
     },
-    [updateOrderInfo]
+    [updateOriginSheetInfo]
   );
 
   const formatDateTime = (date: Date) => {
@@ -123,7 +124,7 @@ export function OrderInfoSection() {
                 Código Rhino/NAGS
               </label>
               <ProductCodeSearch
-                value={orderInfo.rhinoCode}
+                value={originSheetInfo.rhinoCode}
                 onChange={handleProductCodeChange}
               />
             </div>
@@ -138,7 +139,7 @@ export function OrderInfoSection() {
                 type="text"
                 id="descripcion"
                 name="descripcion"
-                value={orderInfo.descripcion}
+                value={originSheetInfo.descripcion}
                 onChange={handleInputChange("descripcion")}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 placeholder="Descripción de la orden"
@@ -155,7 +156,7 @@ export function OrderInfoSection() {
                 type="text"
                 id="claveExterna"
                 name="claveExterna"
-                value={orderInfo.claveExterna}
+                value={originSheetInfo.claveExterna}
                 onChange={handleInputChange("claveExterna")}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 placeholder="Clave externa"

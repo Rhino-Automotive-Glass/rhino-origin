@@ -89,8 +89,8 @@ interface MarcaData {
   coordenadasMain: string;
 }
 
-// Order Info (Header)
-interface OrderInfo {
+// Origin Sheet Info (Header)
+interface OriginSheetInfo {
   rhinoCode: string;
   descripcion: string;
   claveExterna: string;
@@ -98,7 +98,7 @@ interface OrderInfo {
 
 // All Form Data
 interface FormData {
-  orderInfo: OrderInfo;
+  originSheetInfo: OriginSheetInfo;
   preparacion: PreparacionData;
   diseno: DisenoData;
   corte: CorteData;
@@ -111,7 +111,7 @@ interface FormData {
 
 interface FormDataContextType {
   formData: FormData;
-  updateOrderInfo: (data: Partial<OrderInfo>) => void;
+  updateOriginSheetInfo: (data: Partial<OriginSheetInfo>) => void;
   updatePreparacion: (data: Partial<PreparacionData>) => void;
   updateDiseno: (data: Partial<DisenoData>) => void;
   addDisenoFile: (file: UploadedFile) => void;
@@ -132,7 +132,7 @@ interface FormDataContextType {
 }
 
 const initialFormData: FormData = {
-  orderInfo: {
+  originSheetInfo: {
     rhinoCode: "",
     descripcion: "",
     claveExterna: "",
@@ -184,7 +184,7 @@ const initialFormData: FormData = {
 
 const FormDataContext = createContext<FormDataContextType>({
   formData: initialFormData,
-  updateOrderInfo: () => {},
+  updateOriginSheetInfo: () => {},
   updatePreparacion: () => {},
   updateDiseno: () => {},
   addDisenoFile: () => {},
@@ -206,11 +206,11 @@ const FormDataContext = createContext<FormDataContextType>({
 export function FormDataProvider({ children }: { children: ReactNode }) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
 
-  const updateOrderInfo = useCallback((data: Partial<OrderInfo>) => {
+  const updateOriginSheetInfo = useCallback((data: Partial<OriginSheetInfo>) => {
     setFormData((prev) => ({
       ...prev,
-      orderInfo: {
-        ...prev.orderInfo,
+      originSheetInfo: {
+        ...prev.originSheetInfo,
         ...data,
       },
     }));
@@ -394,7 +394,7 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
     <FormDataContext.Provider
       value={{
         formData,
-        updateOrderInfo,
+        updateOriginSheetInfo,
         updatePreparacion,
         updateDiseno,
         addDisenoFile,
