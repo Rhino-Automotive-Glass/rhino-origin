@@ -28,7 +28,7 @@ export default function AuthLayout({
             Rhino Origin
           </h1>
           <p className="text-md text-blue-100">
-            Sistema de Órdenes de Vidrio Automotriz
+            Sistema de Formatos de Origen
           </p>
         </div>
 

@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Rhino Origin - Sistema de Órdenes de Vidrio Automotriz",
+  title: "Rhino Origin - Sistema de Formatos de Origen",
   description: "Sistema de generación de órdenes para la fabricación de vidrio automotriz",
 };
 
