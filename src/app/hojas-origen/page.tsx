@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/client";
+import { EDITING_SHEET_KEY, EDITING_ID_KEY } from "@/components/wizard";
 import type { OriginSheet } from "@/types/originSheet";
 import { ThemeToggle } from "@/components/theme";
 
@@ -12,6 +14,23 @@ export default function HojasOrigenPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [verificandoId, setVerificandoId] = useState<string | null>(null);
+  const router = useRouter();
+
+  const handleEdit = (sheet: OriginSheet) => {
+    if (!confirm("Editar esta hoja de origen reemplazará cualquier información que hayas ingresado actualmente en el formulario. ¿Deseas continuar?")) return;
+    localStorage.setItem(EDITING_SHEET_KEY, JSON.stringify(sheet));
+    localStorage.setItem(EDITING_ID_KEY, sheet.id);
+    // Also seed the header autosave key so OriginSheetInfoSection picks it up
+    localStorage.setItem("rhino-origin-sheet-info", JSON.stringify({
+      originSheetInfo: {
+        rhinoCode: sheet.InformacionOrigen.rhinoCode || "",
+        descripcion: sheet.InformacionOrigen.descripcion || "",
+        claveExterna: sheet.InformacionOrigen.claveExterna || "",
+      },
+      lastSaved: new Date().toISOString(),
+    }));
+    router.push("/");
+  };
 
   useEffect(() => {
     loadSheets();
@@ -328,6 +347,26 @@ export default function HojasOrigenPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-3">
+                        <button
+                          onClick={() => handleEdit(sheet)}
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                          title="Editar"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                            />
+                          </svg>
+                        </button>
                         <button
                           onClick={() => handleDelete(sheet.id)}
                           disabled={deletingId === sheet.id}
@@ -370,6 +409,7 @@ export default function HojasOrigenPage() {
                             </svg>
                           )}
                         </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

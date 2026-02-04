@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useWizard } from "./WizardContext";
-import { useFormData } from "./FormDataContext";
+import { useFormData, EDITING_ID_KEY } from "./FormDataContext";
 import { createClient } from "@/app/lib/supabase/client";
 import { generateOriginSheetId } from "@/lib/originSheet/storage";
 import type { OriginSheet } from "@/types/originSheet";
@@ -27,8 +27,9 @@ export function WizardNavigation() {
 
   const handleFinalizar = () => {
     const now = new Date();
+    const editingId = localStorage.getItem(EDITING_ID_KEY);
     const originSheet: OriginSheet = {
-      id: generateOriginSheetId(),
+      id: editingId || generateOriginSheetId(),
       metadata: {
         creadoPor: userEmail || "Usuario desconocido",
         fechaGuardado: now.toISOString(),

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/client";
+import { EDITING_ID_KEY } from "./FormDataContext";
 import type { OriginSheet } from "@/types/originSheet";
 
 interface ReviewModalProps {
@@ -29,19 +30,36 @@ export function ReviewModal({ originSheet, onClose }: ReviewModalProps) {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       const { id, InformacionOrigen, ...sheetData } = originSheet;
+      const editingId = localStorage.getItem(EDITING_ID_KEY);
 
-      const { error: insertError } = await supabase
-        .from("origin_sheets")
-        .insert({
-          id,
-          user_id: user?.id ?? null,
-          rhino_code: InformacionOrigen.rhinoCode,
-          descripcion: InformacionOrigen.descripcion,
-          clave_externa: InformacionOrigen.claveExterna,
-          data: sheetData,
-        });
+      if (editingId) {
+        const { error: updateError } = await supabase
+          .from("origin_sheets")
+          .update({
+            rhino_code: InformacionOrigen.rhinoCode,
+            descripcion: InformacionOrigen.descripcion,
+            clave_externa: InformacionOrigen.claveExterna,
+            data: sheetData,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingId);
 
-      if (insertError) throw insertError;
+        if (updateError) throw updateError;
+        localStorage.removeItem(EDITING_ID_KEY);
+      } else {
+        const { error: insertError } = await supabase
+          .from("origin_sheets")
+          .insert({
+            id,
+            user_id: user?.id ?? null,
+            rhino_code: InformacionOrigen.rhinoCode,
+            descripcion: InformacionOrigen.descripcion,
+            clave_externa: InformacionOrigen.claveExterna,
+            data: sheetData,
+          });
+
+        if (insertError) throw insertError;
+      }
 
       router.push("/hojas-origen");
     } catch (err) {

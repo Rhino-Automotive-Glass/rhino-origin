@@ -142,13 +142,73 @@ interface FormDataContextType {
 const DRAFT_STORAGE_KEY = "rhino-origin-wizard-draft";
 const STEP_STORAGE_KEY = "rhino-origin-wizard-step";
 const HEADER_STORAGE_KEY = "rhino-origin-sheet-info";
+export const EDITING_SHEET_KEY = "rhino-origin-editing-sheet";
+export const EDITING_ID_KEY = "rhino-origin-editing-id";
 
 export function clearWizardDraft() {
   if (typeof window !== "undefined") {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
     localStorage.removeItem(STEP_STORAGE_KEY);
     localStorage.removeItem(HEADER_STORAGE_KEY);
+    localStorage.removeItem(EDITING_SHEET_KEY);
+    localStorage.removeItem(EDITING_ID_KEY);
   }
+}
+
+// Maps a saved OriginSheet back into the shape FormDataContext expects
+function mapOriginSheetToFormData(sheet: Record<string, any>) {
+  return {
+    originSheetInfo: {
+      rhinoCode: sheet.InformacionOrigen?.rhinoCode || "",
+      descripcion: sheet.InformacionOrigen?.descripcion || "",
+      claveExterna: sheet.InformacionOrigen?.claveExterna || "",
+    },
+    preparacion: {
+      espesores: sheet.Preparacion?.espesores || [],
+      espesorCustom: sheet.Preparacion?.espesorCustom || "",
+      tolerancia: sheet.Preparacion?.tolerancia || "",
+      origen: sheet.Preparacion?.origen || "",
+      origenCustom: sheet.Preparacion?.origenCustom || "",
+    },
+    corte: {
+      ejeX: sheet.Corte?.ejeX || "",
+      ejeY: sheet.Corte?.ejeY || "",
+      area: sheet.Corte?.area || "",
+    },
+    barrenos: {
+      aplica: sheet.Barrenos?.aplica ?? false,
+      cantidadBarrenos: sheet.Barrenos?.cantidad ?? 0,
+      barrenos: (sheet.Barrenos?.barrenos || []).map((b: Record<string, any>) => ({
+        x: b.posicionX || "",
+        y: b.posicionY || "",
+        diametro: b.diametro || "",
+      })),
+    },
+    templado: {
+      tipoMolde: sheet.Templado?.tipoMolde || "",
+      tipoProceso: sheet.Templado?.tipoProceso || "",
+      radioCilindro: sheet.Templado?.radioCilindro || "",
+    },
+    pulido: {
+      metrosLineales: sheet.Pulido?.metrosLineales || "",
+      tipoPulido: sheet.Pulido?.tipoPulido || "",
+    },
+    serigrafia: {
+      aplica: sheet.Serigrafia?.aplica ?? false,
+      color: sheet.Serigrafia?.color || "",
+      defroster_aplica: sheet.Serigrafia?.defroster?.aplica ?? false,
+      defroster_area: sheet.Serigrafia?.defroster?.area || "",
+    },
+    marca: {
+      marca: sheet.Marca?.marca || "",
+      colorMarca: sheet.Marca?.colorMarca || "Negro",
+      numeroMain: sheet.Marca?.numeroMain || "",
+      coordenadasMain: sheet.Marca?.coordenadasMain || "",
+    },
+    observaciones: {
+      notas: sheet.Observaciones?.notas || "",
+    },
+  };
 }
 
 const initialFormData: FormData = {
@@ -232,20 +292,27 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [initialized, setInitialized] = useState(false);
 
-  // Restore draft from localStorage on mount
+  // Restore from localStorage on mount: editing sheet takes priority over draft
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
-      if (saved) {
-        const draft = JSON.parse(saved);
-        setFormData((prev) => ({
-          ...prev,
-          ...draft,
-          diseno: {
-            ...prev.diseno,
-            persistedFiles: draft.diseno?.persistedFiles ?? prev.diseno.persistedFiles,
-          },
-        }));
+      const editing = localStorage.getItem(EDITING_SHEET_KEY);
+      if (editing) {
+        const sheet = JSON.parse(editing);
+        setFormData((prev) => ({ ...prev, ...mapOriginSheetToFormData(sheet) }));
+        localStorage.removeItem(EDITING_SHEET_KEY);
+      } else {
+        const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (saved) {
+          const draft = JSON.parse(saved);
+          setFormData((prev) => ({
+            ...prev,
+            ...draft,
+            diseno: {
+              ...prev.diseno,
+              persistedFiles: draft.diseno?.persistedFiles ?? prev.diseno.persistedFiles,
+            },
+          }));
+        }
       }
     } catch {}
     setInitialized(true);
