@@ -89,6 +89,11 @@ interface MarcaData {
   coordenadasMain: string;
 }
 
+// Observaciones Step Data
+interface ObservacionesData {
+  notas: string;
+}
+
 // Origin Sheet Info (Header)
 interface OriginSheetInfo {
   rhinoCode: string;
@@ -107,6 +112,7 @@ interface FormData {
   pulido: PulidoData;
   serigrafia: SerigrafiaData;
   marca: MarcaData;
+  observaciones: ObservacionesData;
 }
 
 interface FormDataContextType {
@@ -129,6 +135,7 @@ interface FormDataContextType {
   updatePulido: (data: Partial<PulidoData>) => void;
   updateSerigrafia: (data: Partial<SerigrafiaData>) => void;
   updateMarca: (data: Partial<MarcaData>) => void;
+  updateObservaciones: (data: Partial<ObservacionesData>) => void;
 }
 
 const initialFormData: FormData = {
@@ -180,6 +187,9 @@ const initialFormData: FormData = {
     numeroMain: "",
     coordenadasMain: "",
   },
+  observaciones: {
+    notas: "",
+  },
 };
 
 const FormDataContext = createContext<FormDataContextType>({
@@ -201,6 +211,7 @@ const FormDataContext = createContext<FormDataContextType>({
   updatePulido: () => {},
   updateSerigrafia: () => {},
   updateMarca: () => {},
+  updateObservaciones: () => {},
 });
 
 export function FormDataProvider({ children }: { children: ReactNode }) {
@@ -390,6 +401,16 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const updateObservaciones = useCallback((data: Partial<ObservacionesData>) => {
+    setFormData((prev) => ({
+      ...prev,
+      observaciones: {
+        ...prev.observaciones,
+        ...data,
+      },
+    }));
+  }, []);
+
   return (
     <FormDataContext.Provider
       value={{
@@ -411,6 +432,7 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         updatePulido,
         updateSerigrafia,
         updateMarca,
+        updateObservaciones,
       }}
     >
       {children}

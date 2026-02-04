@@ -105,6 +105,9 @@ export function WizardNavigation() {
         numeroMain: formData.marca.numeroMain || null,
         coordenadasMain: formData.marca.coordenadasMain || null,
       },
+      Observaciones: {
+        notas: formData.observaciones.notas || null,
+      },
     };
 
     try {

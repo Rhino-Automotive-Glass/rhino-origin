@@ -17,7 +17,7 @@ export const WIZARD_STEPS: Step[] = [
   { id: "marca", label: "Marca", shortLabel: "Mar" },
   { id: "serigrafia", label: "Serigrafía", shortLabel: "Serig" },
   { id: "templado", label: "Templado", shortLabel: "Temp" },
-  { id: "calidad", label: "Calidad", shortLabel: "QA" },
+  { id: "observaciones", label: "Observaciones", shortLabel: "Obs" },
 ];
 
 interface WizardContextType {

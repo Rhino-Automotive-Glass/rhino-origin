@@ -79,6 +79,10 @@ export interface MarcaData {
   coordenadasMain: string | null;
 }
 
+export interface ObservacionesData {
+  notas: string | null;
+}
+
 export interface OriginSheet {
   id: string;
   metadata: OriginSheetMetadata;
@@ -91,6 +95,7 @@ export interface OriginSheet {
   Pulido: PulidoData;
   Serigrafia: SerigrafiaData;
   Marca: MarcaData;
+  Observaciones: ObservacionesData;
 }
 
 // For Supabase table structure (future)

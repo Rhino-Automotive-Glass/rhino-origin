@@ -11,7 +11,7 @@ import {
   MarcaStep,
   SerigrafiaStep,
   TempladoStep,
-  CalidadStep,
+  ObservacionesStep,
 } from "../steps";
 
 const stepComponents = [
@@ -23,7 +23,7 @@ const stepComponents = [
   MarcaStep,
   SerigrafiaStep,
   TempladoStep,
-  CalidadStep,
+  ObservacionesStep,
 ];
 
 export function WizardContent() {
