@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import type {
   FileType,
   UploadStatus,
@@ -136,6 +136,19 @@ interface FormDataContextType {
   updateSerigrafia: (data: Partial<SerigrafiaData>) => void;
   updateMarca: (data: Partial<MarcaData>) => void;
   updateObservaciones: (data: Partial<ObservacionesData>) => void;
+  resetForm: () => void;
+}
+
+const DRAFT_STORAGE_KEY = "rhino-origin-wizard-draft";
+const STEP_STORAGE_KEY = "rhino-origin-wizard-step";
+const HEADER_STORAGE_KEY = "rhino-origin-sheet-info";
+
+export function clearWizardDraft() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    localStorage.removeItem(STEP_STORAGE_KEY);
+    localStorage.removeItem(HEADER_STORAGE_KEY);
+  }
 }
 
 const initialFormData: FormData = {
@@ -212,10 +225,39 @@ const FormDataContext = createContext<FormDataContextType>({
   updateSerigrafia: () => {},
   updateMarca: () => {},
   updateObservaciones: () => {},
+  resetForm: () => {},
 });
 
 export function FormDataProvider({ children }: { children: ReactNode }) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [initialized, setInitialized] = useState(false);
+
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (saved) {
+        const draft = JSON.parse(saved);
+        setFormData((prev) => ({
+          ...prev,
+          ...draft,
+          diseno: {
+            ...prev.diseno,
+            persistedFiles: draft.diseno?.persistedFiles ?? prev.diseno.persistedFiles,
+          },
+        }));
+      }
+    } catch {}
+    setInitialized(true);
+  }, []);
+
+  // Persist draft to localStorage whenever form data changes
+  useEffect(() => {
+    if (!initialized) return;
+    const { originSheetInfo, diseno, ...rest } = formData;
+    const draft = { ...rest, diseno: { persistedFiles: diseno.persistedFiles } };
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  }, [formData, initialized]);
 
   const updateOriginSheetInfo = useCallback((data: Partial<OriginSheetInfo>) => {
     setFormData((prev) => ({
@@ -411,6 +453,10 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const resetForm = useCallback(() => {
+    setFormData(initialFormData);
+  }, []);
+
   return (
     <FormDataContext.Provider
       value={{
@@ -433,6 +479,7 @@ export function FormDataProvider({ children }: { children: ReactNode }) {
         updateSerigrafia,
         updateMarca,
         updateObservaciones,
+        resetForm,
       }}
     >
       {children}

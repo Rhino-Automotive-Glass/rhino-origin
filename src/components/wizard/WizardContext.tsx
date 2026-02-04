@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 
 export interface Step {
   id: string;
@@ -32,8 +32,27 @@ interface WizardContextType {
 
 const WizardContext = createContext<WizardContextType | undefined>(undefined);
 
+const STEP_STORAGE_KEY = "rhino-origin-wizard-step";
+
 export function WizardProvider({ children }: { children: ReactNode }) {
   const [currentStep, setCurrentStep] = useState(0);
+  const stepLoadedRef = useRef(false);
+
+  // Restore step from localStorage on mount, then persist on every change
+  useEffect(() => {
+    if (!stepLoadedRef.current) {
+      stepLoadedRef.current = true;
+      const saved = localStorage.getItem(STEP_STORAGE_KEY);
+      if (saved !== null) {
+        const step = parseInt(saved, 10);
+        if (!isNaN(step) && step >= 0 && step < WIZARD_STEPS.length) {
+          setCurrentStep(step);
+        }
+      }
+      return; // skip saving on this tick — we just loaded
+    }
+    localStorage.setItem(STEP_STORAGE_KEY, String(currentStep));
+  }, [currentStep]);
 
   const goToStep = (step: number) => {
     if (step >= 0 && step < WIZARD_STEPS.length) {

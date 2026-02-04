@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { originSheetStorage } from "@/lib/originSheet/storage";
+import { createClient } from "@/app/lib/supabase/client";
 import type { OriginSheet } from "@/types/originSheet";
 import { ThemeToggle } from "@/components/theme";
 
@@ -10,22 +10,39 @@ export default function HojasOrigenPage() {
   const [sheets, setSheets] = useState<OriginSheet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [verificandoId, setVerificandoId] = useState<string | null>(null);
 
   useEffect(() => {
     loadSheets();
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) setUserEmail(user.email);
+    });
   }, []);
 
   const loadSheets = async () => {
     setIsLoading(true);
     try {
-      const data = await originSheetStorage.getAll();
-      // Sort by date, newest first
-      data.sort(
-        (a, b) =>
-          new Date(b.metadata.fechaGuardado).getTime() -
-          new Date(a.metadata.fechaGuardado).getTime()
-      );
-      setSheets(data);
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("origin_sheets")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const reconstructed = (data ?? []).map((row) => ({
+        id: row.id,
+        InformacionOrigen: {
+          rhinoCode: row.rhino_code,
+          descripcion: row.descripcion,
+          claveExterna: row.clave_externa,
+        },
+        ...row.data,
+      })) as OriginSheet[];
+
+      setSheets(reconstructed);
     } catch (error) {
       console.error("Error loading origin sheets:", error);
     } finally {
@@ -38,12 +55,53 @@ export default function HojasOrigenPage() {
 
     setDeletingId(id);
     try {
-      await originSheetStorage.delete(id);
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("origin_sheets")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
       setSheets((prev) => prev.filter((s) => s.id !== id));
     } catch (error) {
       console.error("Error deleting origin sheet:", error);
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleVerificar = async (sheet: OriginSheet) => {
+    setVerificandoId(sheet.id);
+    try {
+      const supabase = createClient();
+      const { id, InformacionOrigen, ...sheetData } = sheet;
+      const updatedData = {
+        ...sheetData,
+        metadata: {
+          ...sheetData.metadata,
+          verificadoPor: userEmail,
+        },
+      };
+
+      const { error } = await supabase
+        .from("origin_sheets")
+        .update({ data: updatedData, updated_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setSheets((prev) =>
+        prev.map((s) =>
+          s.id === id
+            ? { ...s, metadata: { ...s.metadata, verificadoPor: userEmail } }
+            : s
+        )
+      );
+    } catch (error) {
+      console.error("Error updating verificado por:", error);
+    } finally {
+      setVerificandoId(null);
     }
   };
 
@@ -94,7 +152,7 @@ export default function HojasOrigenPage() {
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {sheets.length} hoja{sheets.length !== 1 ? "s" : ""} guardada
-              {sheets.length !== 1 ? "s" : ""} en esta sesión
+              {sheets.length !== 1 ? "s" : ""}
             </p>
           </div>
           <Link
@@ -244,10 +302,29 @@ export default function HojasOrigenPage() {
                         {sheet.metadata.creadoPor}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                        {sheet.metadata.verificadoPor || (
-                          <span className="text-gray-400 dark:text-gray-500 italic">
-                            Pendiente
+                        {sheet.metadata.verificadoPor ? (
+                          <span className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked
+                              disabled
+                              className="w-4 h-4 accent-blue-600"
+                            />
+                            {sheet.metadata.verificadoPor}
                           </span>
+                        ) : (
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={false}
+                              onChange={() => handleVerificar(sheet)}
+                              disabled={verificandoId === sheet.id}
+                              className="w-4 h-4 accent-blue-600"
+                            />
+                            <span className="italic text-gray-400 dark:text-gray-500">
+                              {verificandoId === sheet.id ? "Guardando..." : "Pendiente"}
+                            </span>
+                          </label>
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
