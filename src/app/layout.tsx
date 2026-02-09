@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme";
+import { RoleProvider } from "@/contexts/RoleContext";
 import { Analytics } from '@vercel/analytics/next';
 import { DisableZoom } from "@/components/DisableZoom";
 
@@ -39,7 +40,9 @@ export default function RootLayout({
       >
         <DisableZoom />
         <ThemeProvider>
-          {children}
+          <RoleProvider>
+            {children}
+          </RoleProvider>
         </ThemeProvider>
         <Analytics />
       </body>

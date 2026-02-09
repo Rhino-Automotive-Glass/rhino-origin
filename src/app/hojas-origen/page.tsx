@@ -6,21 +6,33 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/client";
 import { EDITING_SHEET_KEY, EDITING_ID_KEY } from "@/components/wizard";
 import type { OriginSheet } from "@/types/originSheet";
-import { ThemeToggle } from "@/components/theme";
+import AppHeader from "@/components/AppHeader";
+import { useRole } from "@/contexts/RoleContext";
+
+interface SheetWithOwner extends OriginSheet {
+  user_id: string;
+}
 
 export default function HojasOrigenPage() {
-  const [sheets, setSheets] = useState<OriginSheet[]>([]);
+  const [sheets, setSheets] = useState<SheetWithOwner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [verificandoId, setVerificandoId] = useState<string | null>(null);
   const router = useRouter();
+  const { user, permissions } = useRole();
 
-  const handleEdit = (sheet: OriginSheet) => {
+  const isOwner = (sheet: SheetWithOwner) => user?.id === sheet.user_id;
+
+  const canEditSheet = (sheet: SheetWithOwner) =>
+    permissions?.canEditAllSheets || (permissions?.canEditOwnSheets && isOwner(sheet));
+
+  const canDeleteSheet = (sheet: SheetWithOwner) =>
+    permissions?.canDeleteAllSheets || (permissions?.canDeleteOwnSheets && isOwner(sheet));
+
+  const handleEdit = (sheet: SheetWithOwner) => {
     if (!confirm("Editar esta hoja de origen reemplazará cualquier información que hayas ingresado actualmente en el formulario. ¿Deseas continuar?")) return;
     localStorage.setItem(EDITING_SHEET_KEY, JSON.stringify(sheet));
     localStorage.setItem(EDITING_ID_KEY, sheet.id);
-    // Also seed the header autosave key so OriginSheetInfoSection picks it up
     localStorage.setItem("rhino-origin-sheet-info", JSON.stringify({
       originSheetInfo: {
         rhinoCode: sheet.InformacionOrigen.rhinoCode || "",
@@ -34,10 +46,6 @@ export default function HojasOrigenPage() {
 
   useEffect(() => {
     loadSheets();
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user?.email) setUserEmail(user.email);
-    });
   }, []);
 
   const loadSheets = async () => {
@@ -53,13 +61,14 @@ export default function HojasOrigenPage() {
 
       const reconstructed = (data ?? []).map((row) => ({
         id: row.id,
+        user_id: row.user_id,
         InformacionOrigen: {
           rhinoCode: row.rhino_code,
           descripcion: row.descripcion,
           claveExterna: row.clave_externa,
         },
         ...row.data,
-      })) as OriginSheet[];
+      })) as SheetWithOwner[];
 
       setSheets(reconstructed);
     } catch (error) {
@@ -90,16 +99,16 @@ export default function HojasOrigenPage() {
     }
   };
 
-  const handleVerificar = async (sheet: OriginSheet) => {
+  const handleVerificar = async (sheet: SheetWithOwner) => {
     setVerificandoId(sheet.id);
     try {
       const supabase = createClient();
-      const { id, InformacionOrigen, ...sheetData } = sheet;
+      const { id, user_id, InformacionOrigen, ...sheetData } = sheet;
       const updatedData = {
         ...sheetData,
         metadata: {
           ...sheetData.metadata,
-          verificadoPor: userEmail,
+          verificadoPor: user?.email ?? null,
         },
       };
 
@@ -113,7 +122,7 @@ export default function HojasOrigenPage() {
       setSheets((prev) =>
         prev.map((s) =>
           s.id === id
-            ? { ...s, metadata: { ...s.metadata, verificadoPor: userEmail } }
+            ? { ...s, metadata: { ...s.metadata, verificadoPor: user?.email ?? null } }
             : s
         )
       );
@@ -124,43 +133,43 @@ export default function HojasOrigenPage() {
     }
   };
 
+  const handleUnverificar = async (sheet: SheetWithOwner) => {
+    setVerificandoId(sheet.id);
+    try {
+      const supabase = createClient();
+      const { id, user_id, InformacionOrigen, ...sheetData } = sheet;
+      const updatedData = {
+        ...sheetData,
+        metadata: {
+          ...sheetData.metadata,
+          verificadoPor: null,
+        },
+      };
+
+      const { error } = await supabase
+        .from("origin_sheets")
+        .update({ data: updatedData, updated_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setSheets((prev) =>
+        prev.map((s) =>
+          s.id === id
+            ? { ...s, metadata: { ...s.metadata, verificadoPor: null } }
+            : s
+        )
+      );
+    } catch (error) {
+      console.error("Error removing verificado por:", error);
+    } finally {
+      setVerificandoId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Rhino Origin
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Sistema de Formatos de Origen
-                  </p>
-                </div>
-              </Link>
-            </div>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       {/* Main Content */}
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -174,25 +183,27 @@ export default function HojasOrigenPage() {
               {sheets.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <Link
-            href="/"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {permissions?.canCreateSheets && (
+            <Link
+              href="/"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Nueva Hoja de Origen
-          </Link>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Nueva Hoja de Origen
+            </Link>
+          )}
         </div>
 
         {isLoading ? (
@@ -236,27 +247,31 @@ export default function HojasOrigenPage() {
               No hay hojas de origen
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              Crea tu primera hoja de origen para comenzar
+              {permissions?.canCreateSheets
+                ? "Crea tu primera hoja de origen para comenzar"
+                : "Aún no se han creado hojas de origen"}
             </p>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            {permissions?.canCreateSheets && (
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Crear Hoja de Origen
-            </Link>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Crear Hoja de Origen
+              </Link>
+            )}
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -321,94 +336,119 @@ export default function HojasOrigenPage() {
                         {sheet.metadata.creadoPor}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                        {sheet.metadata.verificadoPor ? (
-                          <span className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked
-                              disabled
-                              className="w-4 h-4 accent-blue-600"
-                            />
-                            {sheet.metadata.verificadoPor}
-                          </span>
+                        {permissions?.canVerifySheets ? (
+                          /* Interactive verify/unverify for QA + admins */
+                          sheet.metadata.verificadoPor ? (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked
+                                onChange={() => handleUnverificar(sheet)}
+                                disabled={verificandoId === sheet.id}
+                                className="w-4 h-4 accent-blue-600"
+                              />
+                              <span>{sheet.metadata.verificadoPor}</span>
+                            </label>
+                          ) : (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={false}
+                                onChange={() => handleVerificar(sheet)}
+                                disabled={verificandoId === sheet.id}
+                                className="w-4 h-4 accent-blue-600"
+                              />
+                              <span className="italic text-gray-400 dark:text-gray-500">
+                                {verificandoId === sheet.id ? "Guardando..." : "Pendiente"}
+                              </span>
+                            </label>
+                          )
                         ) : (
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={false}
-                              onChange={() => handleVerificar(sheet)}
-                              disabled={verificandoId === sheet.id}
-                              className="w-4 h-4 accent-blue-600"
-                            />
-                            <span className="italic text-gray-400 dark:text-gray-500">
-                              {verificandoId === sheet.id ? "Guardando..." : "Pendiente"}
+                          /* Read-only for everyone else */
+                          sheet.metadata.verificadoPor ? (
+                            <span className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked
+                                disabled
+                                className="w-4 h-4 accent-blue-600"
+                              />
+                              {sheet.metadata.verificadoPor}
                             </span>
-                          </label>
+                          ) : (
+                            <span className="italic text-gray-400 dark:text-gray-500">
+                              Pendiente
+                            </span>
+                          )
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-3">
-                        <button
-                          onClick={() => handleEdit(sheet)}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
-                          title="Editar"
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(sheet.id)}
-                          disabled={deletingId === sheet.id}
-                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50 transition-colors"
-                          title="Eliminar"
-                        >
-                          {deletingId === sheet.id ? (
-                            <svg
-                              className="w-5 h-5 animate-spin"
-                              fill="none"
-                              viewBox="0 0 24 24"
+                          {canEditSheet(sheet) && (
+                            <button
+                              onClick={() => handleEdit(sheet)}
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                              title="Editar"
                             >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
                                 stroke="currentColor"
-                                strokeWidth="4"
-                              />
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              />
-                            </svg>
-                          ) : (
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
+                            </button>
                           )}
-                        </button>
+                          {canDeleteSheet(sheet) && (
+                            <button
+                              onClick={() => handleDelete(sheet.id)}
+                              disabled={deletingId === sheet.id}
+                              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50 transition-colors"
+                              title="Eliminar"
+                            >
+                              {deletingId === sheet.id ? (
+                                <svg
+                                  className="w-5 h-5 animate-spin"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  />
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  />
+                                </svg>
+                              ) : (
+                                <svg
+                                  className="w-5 h-5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
+                                </svg>
+                              )}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
