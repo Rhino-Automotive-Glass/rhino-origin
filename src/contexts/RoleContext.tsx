@@ -37,8 +37,14 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       .eq('user_id', userId)
       .single();
 
-    if (error || !data || !data.roles) {
-      return 'viewer' as UserRole;
+    if (error) {
+      console.warn('[RoleProvider] Error fetching role:', error.message);
+      return null;
+    }
+
+    if (!data || !data.roles) {
+      console.warn('[RoleProvider] No role found for user:', userId);
+      return null;
     }
 
     return (data.roles as any).name as UserRole;
@@ -54,8 +60,14 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       if (currentUser) {
         setUser(currentUser);
         const userRole = await fetchUserRole(currentUser.id);
-        setRole(userRole);
-        setPermissions(getPermissions(userRole));
+        if (userRole) {
+          setRole(userRole);
+          setPermissions(getPermissions(userRole));
+        } else {
+          // No role found — leave permissions null so UI stays permissive
+          setRole(null);
+          setPermissions(null);
+        }
       } else {
         setUser(null);
         setRole(null);

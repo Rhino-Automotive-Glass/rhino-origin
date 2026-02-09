@@ -19,15 +19,19 @@ export default function HojasOrigenPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [verificandoId, setVerificandoId] = useState<string | null>(null);
   const router = useRouter();
-  const { user, permissions } = useRole();
+  const { user, permissions, isLoading: roleLoading } = useRole();
+
+  // When role is not yet resolved (loading or query failed), allow all actions
+  // Once role is resolved, enforce permissions
+  const roleResolved = !roleLoading && permissions !== null;
 
   const isOwner = (sheet: SheetWithOwner) => user?.id === sheet.user_id;
 
   const canEditSheet = (sheet: SheetWithOwner) =>
-    permissions?.canEditAllSheets || (permissions?.canEditOwnSheets && isOwner(sheet));
+    !roleResolved || permissions?.canEditAllSheets || (permissions?.canEditOwnSheets && isOwner(sheet));
 
   const canDeleteSheet = (sheet: SheetWithOwner) =>
-    permissions?.canDeleteAllSheets || (permissions?.canDeleteOwnSheets && isOwner(sheet));
+    !roleResolved || permissions?.canDeleteAllSheets || (permissions?.canDeleteOwnSheets && isOwner(sheet));
 
   const handleEdit = (sheet: SheetWithOwner) => {
     if (!confirm("Editar esta hoja de origen reemplazará cualquier información que hayas ingresado actualmente en el formulario. ¿Deseas continuar?")) return;
@@ -183,7 +187,7 @@ export default function HojasOrigenPage() {
               {sheets.length !== 1 ? "s" : ""}
             </p>
           </div>
-          {permissions?.canCreateSheets && (
+          {(!roleResolved || permissions?.canCreateSheets) && (
             <Link
               href="/"
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -247,11 +251,11 @@ export default function HojasOrigenPage() {
               No hay hojas de origen
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              {permissions?.canCreateSheets
+              {(!roleResolved || permissions?.canCreateSheets)
                 ? "Crea tu primera hoja de origen para comenzar"
                 : "Aún no se han creado hojas de origen"}
             </p>
-            {permissions?.canCreateSheets && (
+            {(!roleResolved || permissions?.canCreateSheets) && (
               <Link
                 href="/"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -336,7 +340,7 @@ export default function HojasOrigenPage() {
                         {sheet.metadata.creadoPor}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                        {permissions?.canVerifySheets ? (
+                        {(!roleResolved || permissions?.canVerifySheets) ? (
                           /* Interactive verify/unverify for QA + admins */
                           sheet.metadata.verificadoPor ? (
                             <label className="flex items-center gap-2 cursor-pointer">
