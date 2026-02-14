@@ -3,3 +3,4 @@ export { FormDataProvider, useFormData, clearWizardDraft, EDITING_SHEET_KEY, EDI
 export { ProgressBar } from "./ProgressBar";
 export { WizardNavigation } from "./WizardNavigation";
 export { WizardContent } from "./WizardContent";
+export { SheetSummary } from "./SheetSummary";

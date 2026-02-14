@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/client";
-import { EDITING_SHEET_KEY, EDITING_ID_KEY } from "@/components/wizard";
+import { EDITING_SHEET_KEY, EDITING_ID_KEY, SheetSummary } from "@/components/wizard";
 import type { OriginSheet } from "@/types/originSheet";
 import AppHeader from "@/components/AppHeader";
 import { useRole } from "@/contexts/RoleContext";
+import { createPortal } from "react-dom";
 
 interface SheetWithOwner extends OriginSheet {
   user_id: string;
@@ -18,6 +19,7 @@ export default function HojasOrigenPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [verificandoId, setVerificandoId] = useState<string | null>(null);
+  const [viewingSheet, setViewingSheet] = useState<SheetWithOwner | null>(null);
   const router = useRouter();
   const { user, permissions, isLoading: roleLoading } = useRole();
 
@@ -388,6 +390,31 @@ export default function HojasOrigenPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-3">
+                          <button
+                            onClick={() => setViewingSheet(sheet)}
+                            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                            title="Ver resumen"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                              />
+                            </svg>
+                          </button>
                           {canEditSheet(sheet) && (
                             <button
                               onClick={() => handleEdit(sheet)}
@@ -472,6 +499,43 @@ export default function HojasOrigenPage() {
           </p>
         </div>
       </footer>
+
+      {/* View Summary Modal */}
+      {viewingSheet && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setViewingSheet(null)} />
+          <div className="relative bg-white dark:bg-gray-800 sm:rounded-xl shadow-xl w-full sm:max-w-3xl h-full sm:h-[70vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                Resumen — Hoja de Origen
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  viewingSheet.metadata.verificadoPor
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                    : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400"
+                }`}>
+                  {viewingSheet.metadata.verificadoPor ? "Verificado" : "No verificado"}
+                </span>
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                {viewingSheet.InformacionOrigen.rhinoCode || "Sin código"}
+              </p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <SheetSummary originSheet={viewingSheet} />
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setViewingSheet(null)}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
