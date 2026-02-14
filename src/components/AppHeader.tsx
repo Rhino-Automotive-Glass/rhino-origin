@@ -114,6 +114,21 @@ export default function AppHeader() {
           </div>
         </div>
       </div>
+      {user && !isLoading && (
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-2 border-t border-gray-100 dark:border-gray-700">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Bienvenido, <span className="font-medium text-gray-900 dark:text-white">{user.email}</span>
+            {role && (
+              <>
+                {' - '}
+                <span className="font-medium text-blue-600 dark:text-blue-400">
+                  {ROLE_LABELS[role] || role}
+                </span>
+              </>
+            )}
+          </p>
+        </div>
+      )}
     </header>
   );
 }

@@ -43,6 +43,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   },
 };
 
-export function getPermissions(role: UserRole): RolePermissions {
-  return ROLE_PERMISSIONS[role];
+export function getPermissions(role: string): RolePermissions {
+  return ROLE_PERMISSIONS[role as UserRole] ?? ROLE_PERMISSIONS.viewer;
 }
