@@ -16,7 +16,8 @@ export async function GET(): Promise<NextResponse> {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch user's files (RLS ensures only their files are returned)
+    // RLS returns the user's own files, plus orphaned files (uploader's
+    // account deleted) for admins.
     const { data, error } = await supabase
       .from("diseno_files")
       .select("*")
