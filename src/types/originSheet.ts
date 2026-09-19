@@ -101,7 +101,7 @@ export interface OriginSheet {
 // For Supabase table structure (future)
 export interface OriginSheetRow {
   id: string;
-  user_id: string;
+  user_id: string | null; // null once the creator's account is deleted
   rhino_code: string | null;
   descripcion: string | null;
   clave_externa: string | null;

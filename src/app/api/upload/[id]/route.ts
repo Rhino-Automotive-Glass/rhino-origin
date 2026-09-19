@@ -21,7 +21,7 @@ export async function DELETE(
     }
 
     // Get the file to verify ownership and get blob URL
-    // RLS ensures only the owner can select their files
+    // RLS allows the owner, or an admin for an orphaned file
     const { data: file, error: selectError } = await supabase
       .from("diseno_files")
       .select("blob_url, blob_pathname")
@@ -43,7 +43,7 @@ export async function DELETE(
       // Continue with database deletion even if blob deletion fails
     }
 
-    // Delete from Supabase (RLS ensures only owner can delete)
+    // Delete from Supabase (RLS: owner, or admin for an orphaned file)
     const { error: deleteError } = await supabase
       .from("diseno_files")
       .delete()

@@ -11,7 +11,8 @@ import { useRole } from "@/contexts/RoleContext";
 import { createPortal } from "react-dom";
 
 interface SheetWithOwner extends OriginSheet {
-  user_id: string;
+  /** null once the creator's account has been deleted (sheet is kept). */
+  user_id: string | null;
 }
 
 export default function HojasOrigenPage() {
