@@ -1,6 +1,12 @@
-import { LoginForm } from '@/components/auth/LoginForm'
+'use client'
+
+import { LoginForm } from '@rhino-automotive-glass/auth-ui'
+import Link from 'next/link'
+import { createClient } from '@/app/lib/supabase/client'
 
 export default function LoginPage() {
+  const supabase = createClient()
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -10,7 +16,25 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <LoginForm />
+      <LoginForm supabase={supabase} redirectTo="/" className="max-w-none" />
+
+      <div className="flex flex-col items-center gap-2 text-sm">
+        <Link
+          href="/forgot-password"
+          className="font-medium text-blue-600 hover:text-blue-500"
+        >
+          ¿Olvidaste tu contraseña?
+        </Link>
+        <p className="text-slate-600">
+          ¿No tienes una cuenta?{' '}
+          <Link
+            href="/signup"
+            className="font-medium text-blue-600 hover:text-blue-500"
+          >
+            Regístrate
+          </Link>
+        </p>
+      </div>
     </div>
   )
 }
